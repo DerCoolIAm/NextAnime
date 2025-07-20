@@ -1,0 +1,44 @@
+/* src/index.css */
+body {
+  background-color: #1c1b1b; /* dark blackish */
+  color: #eee; /* light text */
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.anime-scroll-container {
+  display: flex;
+  gap: 15px;
+  overflow-x: auto;
+  margin-bottom: 40px;
+  padding: 10px 5px;
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: #61dafb #121212; /* For Firefox */
+}
+
+/* Chrome, Edge, Safari */
+.anime-scroll-container::-webkit-scrollbar {
+  height: 16px;
+}
+
+.anime-scroll-container::-webkit-scrollbar-track {
+  background: #121212;
+  border-radius: 10px;
+}
+
+.anime-scroll-container::-webkit-scrollbar-thumb {
+  background-color: #61dafb;
+  border-radius: 10px;
+  border: 2px solid #121212;
+}
+
+.anime-list-scroll::-webkit-scrollbar {
+  display: none; /* hides scrollbar on Chrome/Safari */
+}
+
+.anime-list-scroll {
+  scrollbar-width: none; /* hides scrollbar on Firefox */
+  -ms-overflow-style: none; /* hides scrollbar on IE and Edge */
+}
