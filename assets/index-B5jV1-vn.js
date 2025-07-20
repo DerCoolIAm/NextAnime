@@ -140,4 +140,4 @@ Please change the parent <Route path="${H}"> to <Route path="${H==="/"?"*":`${H}
           background-color: #61dafb;
           border-radius: 4px;
         }
-      `})]})}function Ng(){return _.jsx(ng,{children:_.jsxs(Hm,{children:[_.jsx(Fu,{path:"/",element:_.jsx(Tg,{})}),_.jsx(Fu,{path:"/calendar",element:_.jsx(_g,{})}),_.jsx(Fu,{path:"/cache",element:_.jsx(Ug,{})})]})})}Vy.createRoot(document.getElementById("root")).render(_.jsx(Kd.StrictMode,{children:_.jsx(Ng,{})}));
+      `})]})}function Ng(){return _.jsx(ng,{basename:"/NextAnime",children:_.jsxs(Hm,{children:[_.jsx(Fu,{path:"/",element:_.jsx(Tg,{})}),_.jsx(Fu,{path:"/calendar",element:_.jsx(_g,{})}),_.jsx(Fu,{path:"/cache",element:_.jsx(Ug,{})})]})})}Vy.createRoot(document.getElementById("root")).render(_.jsx(Kd.StrictMode,{children:_.jsx(Ng,{})}));
