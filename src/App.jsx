@@ -6,7 +6,7 @@ import CacheViewer from "./pages/CacheViewer";
 
 function App() {
   return (
-    <Router>
+    <Router basename="/NextAnime">
       <Routes>
         <Route path="/" element={<MainPage />} />
         <Route path="/calendar" element={<Calendar />} />
