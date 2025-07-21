@@ -155,6 +155,7 @@ export default function MainPage() {
           }
           genres
           siteUrl
+          episodes
         }
       }
     `;
@@ -177,7 +178,16 @@ export default function MainPage() {
         }
 
         setWatchingList((prev) => {
-          const newList = [...prev, { ...newAnime, episode: null, airingAt: null, favorited: false }];
+          const newList = [
+            ...prev,
+            { 
+              ...newAnime, 
+              episode: null, 
+              airingAt: null, 
+              favorited: false,
+              episodes: newAnime.episodes ?? 0,  // <-- Save total episodes here
+            }
+          ];
           saveWatchingList(newList);
           return newList;
         });
@@ -190,6 +200,7 @@ export default function MainPage() {
       setError("Error fetching anime");
     }
   }
+
 
   function handleToggleCalendar(anime) {
     setCalendarList((prev) => {
@@ -231,6 +242,22 @@ export default function MainPage() {
         title="View Calendar"
         style={{ position: "absolute", top: 20, right: 20, backgroundColor: "transparent", border: "none", fontSize: 28, cursor: "pointer", color: "#61dafb", zIndex: 10 }}
       >📅</button>
+      <button
+        onClick={() => navigate("/animelist")}
+        title="View Anime List"
+        style={{
+          position: "absolute",
+          top: 20,
+          right: 70, // shifted left from the calendar icon
+          backgroundColor: "transparent",
+          border: "none",
+          fontSize: 28,
+          cursor: "pointer",
+          color: "#61dafb",
+          zIndex: 10,
+        }}
+      >📘</button>
+
 
       <button
         onClick={() => navigate("/cache")}
