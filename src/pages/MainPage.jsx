@@ -121,8 +121,12 @@ export default function MainPage() {
           })
         );
         const flattened = allSchedules.flat();
-        setCalendarList(flattened);
-        saveCalendarList(flattened);
+        setCalendarList((prev) => {
+          const existingIds = new Set(prev.map((ep) => ep.id));
+          const updated = flattened.filter((ep) => existingIds.has(ep.id));
+          saveCalendarList(updated);
+          return updated;
+        });
       } catch (err) {
         console.error("Error fetching full airing schedules:", err);
       }
@@ -130,6 +134,7 @@ export default function MainPage() {
 
     updateCalendarList();
   }, [watchingList]);
+
 
   async function addAnime() {
     setError("");
@@ -199,6 +204,10 @@ export default function MainPage() {
     const filtered = watchingList.filter((a) => a.id !== id);
     setWatchingList(filtered);
     saveWatchingList(filtered);
+
+    const filteredCalendar = calendarList.filter((a) => a.id !== id);
+    setCalendarList(filteredCalendar);
+    saveCalendarList(filteredCalendar);
   }
 
   function toggleFavorite(id) {

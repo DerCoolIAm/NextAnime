@@ -17,11 +17,12 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
         padding: 8,
         cursor: "default",
         minHeight: 90,
+        overflow: "hidden",
       }}
     >
+      {/* Top Row: Image + Title */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div
-          className="anime-image-container"
           style={{
             position: "relative",
             width: 40,
@@ -35,7 +36,6 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
           <img
             src={anime.coverImage.extraLarge}
             alt={anime.title.english || anime.title.romaji}
-            className="anime-cover-image"
             style={{
               width: "100%",
               height: "100%",
@@ -48,7 +48,6 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
             onClick={() => onRemove(anime.id)}
             title="Remove from calendar"
             aria-label={`Remove ${anime.title.english || anime.title.romaji} from calendar`}
-            className="remove-btn"
             style={{
               position: "absolute",
               top: "50%",
@@ -91,6 +90,7 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
         </div>
       </div>
 
+      {/* Bottom Row: Ep (left) and Countdown (right) */}
       {isAiring && (
         <div
           style={{
@@ -99,11 +99,28 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
             color: "#ccc",
             display: "flex",
             justifyContent: "space-between",
-            paddingLeft: 50,
+            alignItems: "center",
+            width: "100%",
+            paddingLeft: 2, // 👈 aligns with card edge
+            paddingRight: 2,
           }}
         >
-          <div>Ep {anime.episode}</div>
-          <Countdown airingAt={anime.airingAt} />
+          <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+            Ep {anime.episode}
+          </div>
+          <div
+            style={{
+              minWidth: 0,
+              maxWidth: "70%",
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
+              textAlign: "right",
+              color: "#aaa",
+            }}
+          >
+            <Countdown airingAt={anime.airingAt} />
+          </div>
         </div>
       )}
     </div>

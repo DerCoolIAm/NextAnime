@@ -40,7 +40,10 @@ export default function Calendar() {
     return today;
   });
   const [weekOffset, setWeekOffset] = useState(0);
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(() => {
+    const saved = localStorage.getItem("showAllEpisodes");
+    return saved === "true";
+  });
 
   useEffect(() => {
     saveCalendarList(calendarList);
@@ -199,7 +202,13 @@ export default function Calendar() {
           </div>
 
           <button
-            onClick={() => setShowAll((prev) => !prev)}
+            onClick={() => {
+              setShowAll((prev) => {
+                const next = !prev;
+                localStorage.setItem("showAllEpisodes", next);
+                return next;
+                });
+               }}
             style={{
               backgroundColor: showAll ? "#4caf50" : "#888",
               border: "none",
