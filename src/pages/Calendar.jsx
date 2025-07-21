@@ -274,16 +274,41 @@ export default function Calendar() {
 
       {/* Delete button fade animation styles */}
       <style>{`
+        .anime-image-container {
+          position: relative;
+        }
+
+        .anime-image-container .remove-btn {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: rgba(255, 0, 0, 0.85);
+          border: none;
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          color: white;
+          font-size: 18px;
+          line-height: 1;
+          cursor: pointer;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .anime-image-container:hover .remove-btn,
+        .anime-image-container .remove-btn:hover {
+          opacity: 1;
+        }
+
         .anime-image-container:hover .anime-cover-image {
           opacity: 0.4;
-          transition: opacity 0.3s ease;
-        }
-        .anime-image-container:hover .remove-btn,
-        .remove-btn:hover {
-          opacity: 1 !important;
-          transition: opacity 0.3s ease;
         }
       `}</style>
+
     </div>
   );
 }

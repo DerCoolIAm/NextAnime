@@ -23,6 +23,7 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
       {/* Top Row: Image + Title */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div
+          className="anime-image-container"
           style={{
             position: "relative",
             width: 40,
@@ -36,38 +37,20 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
           <img
             src={anime.coverImage.extraLarge}
             alt={anime.title.english || anime.title.romaji}
+            className="anime-cover-image"
             style={{
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              transition: "opacity 0.3s ease",
               display: "block",
+              transition: "opacity 0.3s ease",
             }}
           />
           <button
+            className="remove-btn"
             onClick={() => onRemove(anime.id)}
             title="Remove from calendar"
             aria-label={`Remove ${anime.title.english || anime.title.romaji} from calendar`}
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              backgroundColor: "rgba(255, 0, 0, 0.85)",
-              border: "none",
-              borderRadius: "50%",
-              width: 28,
-              height: 28,
-              color: "white",
-              fontSize: 18,
-              lineHeight: 1,
-              cursor: "pointer",
-              opacity: 0,
-              transition: "opacity 0.3s ease",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
           >
             🗑
           </button>
@@ -90,7 +73,7 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
         </div>
       </div>
 
-      {/* Bottom Row: Ep (left) and Countdown (right) */}
+      {/* Bottom Row: Ep + Countdown */}
       {isAiring && (
         <div
           style={{
@@ -101,7 +84,7 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
             justifyContent: "space-between",
             alignItems: "center",
             width: "100%",
-            paddingLeft: 2, // 👈 aligns with card edge
+            paddingLeft: 2,
             paddingRight: 2,
           }}
         >
