@@ -1,14 +1,14 @@
 import React from "react";
 import CalendarAnimeCard from "./CalendarAnimeCard";
 
-export default function DayColumn({ date, animes, onRemove, isCurrentWeek }) {
+export default function DayColumn({ date, animes, onRemove }) {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const dayName = dayNames[date.getDay()];
   const dayNum = date.getDate();
   
-  // Check if this is today
+  // Check if this is today (ignore isCurrentWeek)
   const today = new Date();
-  const isToday = isCurrentWeek && 
+  const isToday = 
     date.getDate() === today.getDate() &&
     date.getMonth() === today.getMonth() &&
     date.getFullYear() === today.getFullYear();

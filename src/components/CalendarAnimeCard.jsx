@@ -1,23 +1,66 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Countdown from "./Countdown";
 
 export default function CalendarAnimeCard({ anime, onRemove }) {
   const isAiring = anime.episode !== null && anime.airingAt !== null;
 
+  // Load watched info from localStorage on every render
+  const [watchedState, setWatchedState] = useState(() => {
+    try {
+      const saved = localStorage.getItem("watchedAnime");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Check if this anime episode is watched (only previous eps)
+  const isWatched =
+    watchedState[anime.id] && anime.episode <= watchedState[anime.id];
+
+  // Sync watchedState with localStorage whenever it changes (optional, for safety)
+  useEffect(() => {
+    try {
+      localStorage.setItem("watchedAnime", JSON.stringify(watchedState));
+    } catch {}
+  }, [watchedState]);
+
+  function toggleWatched() {
+    setWatchedState((prev) => {
+      const currentWatched = prev[anime.id] || 0;
+      // If already watched this episode, unwatch it (decrement)
+      // else set watched up to this episode
+      const newWatched =
+        currentWatched >= anime.episode ? currentWatched - 1 : anime.episode;
+
+      // Build new state
+      const updated = { ...prev };
+      if (newWatched <= 0) {
+        delete updated[anime.id];
+      } else {
+        updated[anime.id] = newWatched;
+      }
+      return updated;
+    });
+  }
+
   return (
     <div
       title={anime.title.english || anime.title.romaji}
+      onDoubleClick={toggleWatched}
       style={{
         position: "relative",
         display: "flex",
         flexDirection: "column",
         gap: 4,
-        backgroundColor: "#3a3a3a",
+        backgroundColor: isWatched ? "#2e2e2e" : "#3a3a3a",
+        filter: isWatched ? "grayscale(70%)" : "none",
         borderRadius: 8,
         padding: 8,
         cursor: "default",
         minHeight: 90,
         overflow: "hidden",
+        transition: "background-color 0.3s ease, filter 0.3s ease",
       }}
     >
       {/* Top Row: Image + Title */}
@@ -32,6 +75,8 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
             borderRadius: 6,
             overflow: "hidden",
             cursor: "pointer",
+            filter: isWatched ? "grayscale(70%)" : "none",
+            transition: "filter 0.3s ease",
           }}
         >
           <img
@@ -67,6 +112,8 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
             textOverflow: "ellipsis",
             flexGrow: 1,
             minWidth: 0,
+            color: isWatched ? "#888" : "#eee",
+            transition: "color 0.3s ease",
           }}
         >
           {anime.title.english || anime.title.romaji}
@@ -79,13 +126,14 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
           style={{
             marginTop: 4,
             fontSize: 12,
-            color: "#ccc",
+            color: isWatched ? "#888" : "#ccc",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             width: "100%",
             paddingLeft: 2,
             paddingRight: 2,
+            transition: "color 0.3s ease",
           }}
         >
           <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -99,7 +147,8 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
               whiteSpace: "nowrap",
               textOverflow: "ellipsis",
               textAlign: "right",
-              color: "#aaa",
+              color: isWatched ? "#666" : "#aaa",
+              transition: "color 0.3s ease",
             }}
           >
             <Countdown airingAt={anime.airingAt} />
