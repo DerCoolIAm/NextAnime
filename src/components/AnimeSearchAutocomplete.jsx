@@ -1,0 +1,142 @@
+// components/AnimeSearchAutocomplete.jsx
+import React, { useState, useEffect, useRef } from "react";
+
+export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
+  const [suggestions, setSuggestions] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const containerRef = useRef();
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (!containerRef.current?.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!value.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    const delayDebounce = setTimeout(() => {
+      fetch("https://graphql.anilist.co", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            query ($search: String) {
+              Page(perPage: 6) {
+                media(search: $search, type: ANIME) {
+                  id
+                  title {
+                    english
+                    romaji
+                  }
+                }
+              }
+            }
+          `,
+          variables: { search: value.trim() },
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setSuggestions(data.data?.Page?.media || []);
+          setShowDropdown(true);
+        })
+        .catch(() => setSuggestions([]));
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [value]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: "relative",
+        width: "100%",
+        maxWidth: "400px",
+        flexShrink: 1,
+      }}
+    >
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="e.g. Attack on Titan"
+        style={{
+          padding: "8px 12px",
+          borderRadius: 6,
+          border: "none",
+          width: "100%",
+          fontSize: 16,
+          backgroundColor: "#1e1e1e",
+          color: "#eee",
+        }}
+        onFocus={() => value.trim() && setShowDropdown(true)}
+      />
+      {showDropdown && suggestions.length > 0 && (
+        <ul
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            width: "108%",
+            backgroundColor: "#222",
+            color: "#eee",
+            borderRadius: "0 0 6px 6px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.6)",
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            zIndex: 999,
+            maxHeight: 200,
+            overflowY: "auto",
+            scrollbarWidth: "none", // Firefox
+          }}
+          className="autocomplete-dropdown"
+        >
+          {suggestions.map((anime) => (
+            <li
+              key={anime.id}
+              onClick={() => {
+                const name = anime.title.english || anime.title.romaji;
+                onSelect(name);
+                setShowDropdown(false);
+              }}
+              style={{
+                padding: "10px 12px",
+                cursor: "pointer",
+                borderBottom: "1px solid #333",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#333")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#222")
+              }
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              {anime.title.english || anime.title.romaji}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Hide scrollbar for Chrome/Safari */}
+      <style>
+        {`
+          .autocomplete-dropdown::-webkit-scrollbar {
+            display: none;
+          }
+        `}
+      </style>
+    </div>
+  );
+}

@@ -1,8 +1,8 @@
-// MainPage.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import SavedAnimeHorizontal from "../components/SavedAnimeHorizontal";
 import UpcomingAnimeVertical from "../components/UpcomingAnimeVertical";
+import AnimeSearchAutocomplete from "../components/AnimeSearchAutocomplete";
 import {
   loadWatchingList,
   saveWatchingList,
@@ -135,7 +135,6 @@ export default function MainPage() {
     updateCalendarList();
   }, [watchingList]);
 
-
   async function addAnime() {
     setError("");
     const searchName = addName.trim();
@@ -180,13 +179,13 @@ export default function MainPage() {
         setWatchingList((prev) => {
           const newList = [
             ...prev,
-            { 
-              ...newAnime, 
-              episode: null, 
-              airingAt: null, 
+            {
+              ...newAnime,
+              episode: null,
+              airingAt: null,
               favorited: false,
-              episodes: newAnime.episodes ?? 0,  // <-- Save total episodes here
-            }
+              episodes: newAnime.episodes ?? 0,
+            },
           ];
           saveWatchingList(newList);
           return newList;
@@ -200,7 +199,6 @@ export default function MainPage() {
       setError("Error fetching anime");
     }
   }
-
 
   function handleToggleCalendar(anime) {
     setCalendarList((prev) => {
@@ -222,7 +220,9 @@ export default function MainPage() {
   }
 
   function toggleFavorite(id) {
-    const updated = watchingList.map((a) => a.id === id ? { ...a, favorited: !a.favorited } : a);
+    const updated = watchingList.map((a) =>
+      a.id === id ? { ...a, favorited: !a.favorited } : a
+    );
     setWatchingList(updated);
     saveWatchingList(updated);
   }
@@ -230,9 +230,34 @@ export default function MainPage() {
   const sortedWatchingList = [...watchingList].sort((a, b) => (a.airingAt || 0) - (b.airingAt || 0));
 
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", color: "#eee", padding: "0 20px", backgroundColor: "#121212", borderRadius: 12, boxShadow: "0 0 20px rgba(0,0,0,0.7)", position: "relative" }}>
+    <div
+      style={{
+        maxWidth: 900,
+        margin: "40px auto",
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        color: "#eee",
+        padding: "0 20px",
+        backgroundColor: "#121212",
+        borderRadius: 12,
+        boxShadow: "0 0 20px rgba(0,0,0,0.7)",
+        position: "relative",
+      }}
+    >
       {showDuplicatePopup && (
-        <div style={{ position: "fixed", top: 20, right: 20, backgroundColor: "rgba(255, 69, 58, 0.95)", color: "white", padding: "12px 20px", borderRadius: 8, boxShadow: "0 2px 10px rgba(0,0,0,0.3)", fontWeight: "700", zIndex: 1000 }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 20,
+            backgroundColor: "rgba(255, 69, 58, 0.95)",
+            color: "white",
+            padding: "12px 20px",
+            borderRadius: 8,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            fontWeight: "700",
+            zIndex: 1000,
+          }}
+        >
           This anime is already in your watching list!
         </div>
       )}
@@ -240,15 +265,10 @@ export default function MainPage() {
       <button
         onClick={() => navigate("/calendar")}
         title="View Calendar"
-        style={{ position: "absolute", top: 20, right: 20, backgroundColor: "transparent", border: "none", fontSize: 28, cursor: "pointer", color: "#61dafb", zIndex: 10 }}
-      >📅</button>
-      <button
-        onClick={() => navigate("/animelist")}
-        title="View Anime List"
         style={{
           position: "absolute",
           top: 20,
-          right: 70, // shifted left from the calendar icon
+          right: 20,
           backgroundColor: "transparent",
           border: "none",
           fontSize: 28,
@@ -256,29 +276,100 @@ export default function MainPage() {
           color: "#61dafb",
           zIndex: 10,
         }}
-      >📘</button>
-
+      >
+        📅
+      </button>
+      <button
+        onClick={() => navigate("/animelist")}
+        title="View Anime List"
+        style={{
+          position: "absolute",
+          top: 20,
+          right: 70,
+          backgroundColor: "transparent",
+          border: "none",
+          fontSize: 28,
+          cursor: "pointer",
+          color: "#61dafb",
+          zIndex: 10,
+        }}
+      >
+        📘
+      </button>
 
       <button
         onClick={() => navigate("/cache")}
         title="View Cached Data"
-        style={{ position: "absolute", top: 20, left: 20, backgroundColor: "transparent", border: "none", fontSize: 28, cursor: "pointer", color: "#61dafb", zIndex: 10 }}
-      >🧠</button>
+        style={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          backgroundColor: "transparent",
+          border: "none",
+          fontSize: 28,
+          cursor: "pointer",
+          color: "#61dafb",
+          zIndex: 10,
+        }}
+      >
+        🧠
+      </button>
+      <h2
+        style={{
+          textAlign: "center",
+          marginBottom: 30,
+          backgroundColor: "#f5f5f5",
+          color: "#333",
+          padding: "15px 20px",
+          borderRadius: 8,
+          maxWidth: 400,
+          marginLeft: "auto",
+          marginRight: "auto",
+          fontWeight: 700,
+        }}
+      >
+        📺 Upcoming Anime Episodes
+      </h2>
 
-      <h2 style={{ textAlign: "center", marginBottom: 30, backgroundColor: "#f5f5f5", color: "#333", padding: "15px 20px", borderRadius: 8, maxWidth: 400, marginLeft: "auto", marginRight: "auto", fontWeight: 700 }}>📺 Upcoming Anime Episodes</h2>
-
-      <div style={{ backgroundColor: "#282828", padding: 20, borderRadius: 12, marginBottom: 30, textAlign: "center" }}>
+      <div
+        style={{
+          backgroundColor: "#282828",
+          padding: 20,
+          borderRadius: 12,
+          marginBottom: 30,
+          textAlign: "center",
+        }}
+      >
         <p style={{ marginBottom: 10 }}>
-          Your watching list — add an anime by name (case insensitive):
+          Your watching list — Add any anime by name:
         </p>
-        <input
-          type="text"
-          value={addName}
-          onChange={(e) => setAddName(e.target.value)}
-          placeholder="e.g. attack on titan"
-          style={{ padding: "8px 12px", borderRadius: 6, border: "none", marginRight: 10, width: 220, fontSize: 16 }}
-        />
-        <button onClick={addAnime} style={{ padding: "8px 16px", borderRadius: 6, border: "none", backgroundColor: "#61dafb", fontWeight: 700, cursor: "pointer" }}>Add</button>
+
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+          <div style={{ width: "300px"}}>
+            <AnimeSearchAutocomplete
+              value={addName}
+              onChange={setAddName}
+              onSelect={setAddName}
+            />
+          </div>
+          <button
+            onClick={addAnime}
+            style={{
+              padding: "10px 16px",
+              backgroundColor: "#6dd6ff", // light blue from your palette
+              color: "#000",
+              fontWeight: "bold",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              flexShrink: 0,
+              marginLeft: "25px"
+            }}
+          >
+            Add
+          </button>
+        </div>
+
         {error && <p style={{ color: "tomato", marginTop: 10 }}>{error}</p>}
       </div>
 
