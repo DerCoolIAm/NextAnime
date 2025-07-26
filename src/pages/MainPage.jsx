@@ -9,7 +9,14 @@ import {
   loadCalendarList,
   saveCalendarList,
 } from "../utils/storage";
-import { FullAiringSchedule } from "../utils/FullAiringSchedule";
+
+import {
+  fetchAiringSchedulesByIds,
+  fetchFullAiringSchedule,
+  fetchAnimeByName,
+  fetchNextAiringSchedules,
+  fetchAnimeWithSchedules,
+} from "../utils/anilistApi";
 
 export default function MainPage() {
   const [episodes, setEpisodes] = useState([]);
@@ -19,68 +26,36 @@ export default function MainPage() {
   const [addName, setAddName] = useState("");
   const [showDuplicatePopup, setShowDuplicatePopup] = useState(false);
   const navigate = useNavigate();
-  const prevWatchingListLength = useRef(watchingList.length);
 
+  // Track previous watchingList IDs for comparison
+  const prevWatchingListIds = useRef(new Set(watchingList.map((a) => a.id)));
+
+  // Fetch general upcoming anime (for UpcomingAnimeVertical)
   useEffect(() => {
-    const query = `
-      query {
-        Page(perPage: 1) {
-          airingSchedules(notYetAired: true, sort: TIME) {
-            airingAt
-            episode
-            media {
-              id
-              title {
-                romaji
-                english
-              }
-              coverImage {
-                medium
-                extraLarge
-              }
-              genres
-              siteUrl
-            }
-          }
-        }
+    async function loadUpcoming() {
+      try {
+        const upcoming = await fetchNextAiringSchedules(10);
+        setEpisodes(upcoming);
+      } catch (err) {
+        console.error("Error fetching upcoming anime:", err);
       }
-    `;
-
-    fetch("https://graphql.anilist.co", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
-    })
-      .then((res) => res.json())
-      .then((data) => setEpisodes(data.data.Page.airingSchedules))
-      .catch(console.error);
+    }
+    loadUpcoming();
   }, []);
 
+  // Fetch airing schedules for watching list (batched, on change of IDs)
   useEffect(() => {
-    if (!watchingList.length) return;
-    const ids = watchingList.map((a) => a.id);
-    const schedulesQuery = `
-      query ($ids: [Int]) {
-        Page(perPage: 50) {
-          airingSchedules(mediaId_in: $ids, notYetAired: true, sort: TIME) {
-            airingAt
-            episode
-            media {
-              id
-            }
-          }
-        }
-      }
-    `;
+    async function loadSchedules() {
+      if (watchingList.length === 0) return;
 
-    fetch("https://graphql.anilist.co", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: schedulesQuery, variables: { ids } }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const schedules = data.data.Page.airingSchedules;
+      const currentIds = new Set(watchingList.map((a) => a.id));
+      // Skip if IDs haven't changed
+      if (areSetsEqual(currentIds, prevWatchingListIds.current)) return;
+      prevWatchingListIds.current = currentIds;
+
+      try {
+        const schedules = await fetchAiringSchedulesByIds([...currentIds]);
+
         setWatchingList((oldList) => {
           const updated = oldList.map((anime) => {
             const schedule = schedules.find((sch) => sch.media.id === anime.id);
@@ -93,121 +68,135 @@ export default function MainPage() {
           saveWatchingList(updated);
           return updated;
         });
-      })
-      .catch(console.error);
-  }, [watchingList.length]);
+      } catch (err) {
+        console.error("Error fetching airing schedules:", err);
+      }
+    }
+    loadSchedules();
+  }, [watchingList]);
 
+  // Save calendarList when it changes
   useEffect(() => {
     saveCalendarList(calendarList);
   }, [calendarList]);
 
+  // --- FIXED: Only fetch full airing schedule for newly added anime ---
+  const prevWatchingList = useRef(watchingList);
+
   useEffect(() => {
-    async function updateCalendarList() {
-      if (!watchingList.length) return;
-      if (watchingList.length === prevWatchingListLength.current) return;
-      prevWatchingListLength.current = watchingList.length;
+    async function fetchScheduleForNewAnime() {
+      // Detect newly added anime by comparing IDs
+      const oldIds = new Set(prevWatchingList.current.map((a) => a.id));
+      const newAnime = watchingList.find((a) => !oldIds.has(a.id));
+
+      if (!newAnime) {
+        prevWatchingList.current = watchingList;
+        return; // no new anime, skip
+      }
 
       try {
-        const allSchedules = await Promise.all(
-          watchingList.map(async (anime) => {
-            const schedule = await FullAiringSchedule(anime.id);
-            return schedule.map((ep) => ({
-              id: anime.id,
-              title: anime.title,
-              coverImage: anime.coverImage,
-              episode: ep.episode,
-              airingAt: ep.airingAt,
-            }));
-          })
-        );
-        const flattened = allSchedules.flat();
-        setCalendarList((prev) => {
-          const existingIds = new Set(prev.map((ep) => ep.id));
-          const updated = flattened.filter((ep) => existingIds.has(ep.id));
-          saveCalendarList(updated);
-          return updated;
-        });
-      } catch (err) {
-        console.error("Error fetching full airing schedules:", err);
-      }
-    }
+        const schedule = await fetchFullAiringSchedule(newAnime.id);
+        const newEpisodes = schedule.map((ep) => ({
+          id: newAnime.id,
+          title: newAnime.title,
+          coverImage: newAnime.coverImage,
+          episode: ep.episode,
+          airingAt: ep.airingAt,
+        }));
 
-    updateCalendarList();
+      } catch (err) {
+        console.error("Error fetching full airing schedule for new anime:", err);
+      }
+
+      prevWatchingList.current = watchingList;
+    }
+    fetchScheduleForNewAnime();
   }, [watchingList]);
 
+  // Add anime by name using API helper
   async function addAnime() {
     setError("");
     const searchName = addName.trim();
     if (!searchName) return;
 
-    const searchQuery = `
-      query ($search: String) {
-        Media(search: $search, type: ANIME) {
-          id
-          title {
-            romaji
-            english
-            native
-          }
-          coverImage {
-            extraLarge
-          }
-          genres
-          siteUrl
-          episodes
-        }
-      }
-    `;
-
     try {
-      const res = await fetch("https://graphql.anilist.co", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: searchQuery, variables: { search: searchName } }),
-      });
+      const newAnime = await fetchAnimeByName(searchName);
 
-      const json = await res.json();
+      console.log("Anime to add:", newAnime);
+      console.log("Calling fetchAnimeWithSchedules with id:", newAnime?.id);
 
-      if (json.data?.Media) {
-        const newAnime = json.data.Media;
-        if (watchingList.some((a) => a.id === newAnime.id)) {
-          setShowDuplicatePopup(true);
-          setTimeout(() => setShowDuplicatePopup(false), 3000);
-          return;
-        }
-
-        setWatchingList((prev) => {
-          const newList = [
-            ...prev,
-            {
-              ...newAnime,
-              episode: null,
-              airingAt: null,
-              favorited: false,
-              episodes: newAnime.episodes ?? 0,
-            },
-          ];
-          saveWatchingList(newList);
-          return newList;
-        });
-
-        setAddName("");
-      } else {
+      if (!newAnime) {
         setError("Anime not found on AniList");
+        return;
       }
-    } catch {
+
+      if (watchingList.some((a) => a.id === newAnime.id)) {
+        setShowDuplicatePopup(true);
+        setTimeout(() => setShowDuplicatePopup(false), 3000);
+        return;
+      }
+
+      const detailedAnime = await fetchAnimeWithSchedules(newAnime.id);
+      if (!detailedAnime) {
+        setError("Error fetching detailed anime info. Please try again.");
+        return;
+      }
+
+      const updatedAnime = {
+        id: detailedAnime.id,
+        title: detailedAnime.title,
+        coverImage: detailedAnime.coverImage,
+        episodes: detailedAnime.episodes || 0,
+        siteUrl: newAnime.siteUrl,
+        genres: newAnime.genres || [],
+        cachedEpisodes: 0,
+        isFavorite: false,
+        watchedUntil: 0,
+        fullAiringSchedule: detailedAnime.airingSchedule?.nodes || [],
+        nextAiringEpisode: detailedAnime.nextAiringEpisode || null,
+      };
+
+      const updatedList = [...watchingList, updatedAnime];
+      setWatchingList(updatedList);
+      saveWatchingList(updatedList);
+      setAddName("");
+
+    } catch (err) {
       setError("Error fetching anime");
+      console.error("Error in addAnime:", err);
     }
   }
 
+
+
+
   function handleToggleCalendar(anime) {
     setCalendarList((prev) => {
-      const isInCalendar = prev.some((a) => a.id === anime.id);
-      const newList = isInCalendar ? prev.filter((a) => a.id !== anime.id) : [...prev, anime];
-      saveCalendarList(newList);
-      return newList;
+      // Check if any episodes of this anime are in the calendar
+      const isInCalendar = prev.some((ep) => ep.id === anime.id);
+
+      if (isInCalendar) {
+        // Remove all episodes of this anime
+        const filtered = prev.filter((ep) => ep.id !== anime.id);
+        saveCalendarList(filtered);
+        return filtered;
+      } else {
+        // Add all episodes from fullAiringSchedule as separate calendar entries
+        const episodesToAdd = (anime.fullAiringSchedule || []).map((ep) => ({
+          id: anime.id,
+          title: anime.title,
+          coverImage: anime.coverImage,
+          episode: ep.episode,
+          airingAt: ep.airingAt,
+        }));
+
+        const updated = [...prev, ...episodesToAdd];
+        saveCalendarList(updated);
+        return updated;
+      }
     });
   }
+
 
   function deleteAnime(id) {
     const filtered = watchingList.filter((a) => a.id !== id);
@@ -228,6 +217,13 @@ export default function MainPage() {
   }
 
   const sortedWatchingList = [...watchingList].sort((a, b) => (a.airingAt || 0) - (b.airingAt || 0));
+
+  // Helper for set equality
+  function areSetsEqual(a, b) {
+    if (a.size !== b.size) return false;
+    for (const item of a) if (!b.has(item)) return false;
+    return true;
+  }
 
   return (
     <div
@@ -344,8 +340,16 @@ export default function MainPage() {
           Your watching list — Add any anime by name:
         </p>
 
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-          <div style={{ width: "300px"}}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "10px",
+            marginBottom: "16px",
+          }}
+        >
+          <div style={{ width: "300px" }}>
             <AnimeSearchAutocomplete
               value={addName}
               onChange={setAddName}
@@ -356,14 +360,15 @@ export default function MainPage() {
             onClick={addAnime}
             style={{
               padding: "10px 16px",
-              backgroundColor: "#6dd6ff", // light blue from your palette
+              backgroundColor: "#6dd6ff",
+              // light blue from your palette
               color: "#000",
               fontWeight: "bold",
               border: "none",
               borderRadius: "6px",
               cursor: "pointer",
               flexShrink: 0,
-              marginLeft: "25px"
+              marginLeft: "25px",
             }}
           >
             Add

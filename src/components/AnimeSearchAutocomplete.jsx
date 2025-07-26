@@ -1,5 +1,6 @@
 // components/AnimeSearchAutocomplete.jsx
 import React, { useState, useEffect, useRef } from "react";
+import { searchAnimeByName } from "../utils/anilistApi";
 
 export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
   const [suggestions, setSuggestions] = useState([]);
@@ -22,33 +23,14 @@ export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
       return;
     }
 
-    const delayDebounce = setTimeout(() => {
-      fetch("https://graphql.anilist.co", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            query ($search: String) {
-              Page(perPage: 6) {
-                media(search: $search, type: ANIME) {
-                  id
-                  title {
-                    english
-                    romaji
-                  }
-                }
-              }
-            }
-          `,
-          variables: { search: value.trim() },
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setSuggestions(data.data?.Page?.media || []);
-          setShowDropdown(true);
-        })
-        .catch(() => setSuggestions([]));
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const results = await searchAnimeByName(value.trim(), 6);
+        setSuggestions(results);
+        setShowDropdown(true);
+      } catch {
+        setSuggestions([]);
+      }
     }, 300);
 
     return () => clearTimeout(delayDebounce);
@@ -98,7 +80,7 @@ export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
             zIndex: 999,
             maxHeight: 200,
             overflowY: "auto",
-            scrollbarWidth: "none", // Firefox
+            scrollbarWidth: "none",
           }}
           className="autocomplete-dropdown"
         >

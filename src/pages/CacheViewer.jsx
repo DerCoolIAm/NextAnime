@@ -1,7 +1,8 @@
-// ... imports remain unchanged
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FullAiringSchedule } from "../utils/FullAiringSchedule";
+import {
+  fetchFullAiringSchedule,
+} from "../utils/anilistApi";
 
 export default function CacheViewer() {
   const navigate = useNavigate();
@@ -50,62 +51,66 @@ export default function CacheViewer() {
   }
 
   async function cacheAllEpisodes() {
-  if (watchingList.length === 0) return;
-  setLoading(true);
+    if (watchingList.length === 0) return;
+    setLoading(true);
 
-  try {
-    let updatedCalendar = [...calendarList];
+    try {
+      let updatedCalendar = [...calendarList];
 
-    for (const anime of watchingList) {
-      const existingEpisodes = calendarList.filter((ep) => ep.id === anime.id);
-      const existingEpisodeCount = existingEpisodes.length;
+      for (const anime of watchingList) {
+        const cachedEpisodesForAnime = updatedCalendar.filter(ep => ep.id === anime.id);
+        const cachedCount = cachedEpisodesForAnime.length;
+        const totalEpisodes = anime.episodes || 0;
 
-      // Fetch the full list of episodes from the API
-      console.log(`📡 Fetching episodes for ${anime.title.english || anime.title.romaji}`);
-      const fullSchedule = await FullAiringSchedule(anime.id, true);
+        if (cachedCount >= totalEpisodes && totalEpisodes > 0) {
+          console.log(`✅ Skipping already fully cached: ${anime.title.english || anime.title.romaji}`);
+          continue; // Skip fetching if fully cached
+        }
 
-      if (!fullSchedule || fullSchedule.length === 0) {
-        console.warn(`⚠️ No episodes found for ${anime.title.english || anime.title.romaji}`);
-        continue;
+        console.log(`📡 Fetching episodes for ${anime.title.english || anime.title.romaji}`);
+        const fullSchedule = await fetchFullAiringSchedule(anime.id);
+        if (!fullSchedule || fullSchedule.length === 0) {
+          console.warn(`⚠️ No episodes found for ${anime.title.english || anime.title.romaji}`);
+          continue;
+        }
+
+        // Get episode numbers already cached
+        const cachedEpisodeNumbers = new Set(cachedEpisodesForAnime.map(ep => ep.episode));
+
+        // Filter out episodes already cached to avoid duplicates
+        const newEpisodes = fullSchedule
+          .filter(ep => !cachedEpisodeNumbers.has(ep.episode))
+          .map(ep => ({
+            id: anime.id,
+            title: anime.title,
+            coverImage: anime.coverImage,
+            episode: ep.episode,
+            airingAt: ep.airingAt,
+          }));
+
+        if (newEpisodes.length === 0) {
+          console.log(`✅ No new episodes to add for ${anime.title.english || anime.title.romaji}`);
+          continue;
+        }
+
+        updatedCalendar = [...updatedCalendar, ...newEpisodes];
+        console.log(`🎯 Cached ${newEpisodes.length} new episodes for ${anime.title.english || anime.title.romaji}`);
+
+        await new Promise(res => setTimeout(res, 300)); // rate limit delay
       }
 
-      const totalEpisodeCount = fullSchedule.length;
+      localStorage.setItem("calendarList", JSON.stringify(updatedCalendar));
+      setCalendarList(updatedCalendar);
 
-      // ✅ Only skip if already fully cached
-      if (existingEpisodeCount >= totalEpisodeCount) {
-        console.log(`✅ Skipping already fully cached: ${anime.title.english || anime.title.romaji}`);
-        continue;
-      }
-
-      // Remove previously cached episodes for this anime
-      const filteredCalendar = updatedCalendar.filter((ep) => ep.id !== anime.id);
-
-      const mapped = fullSchedule.map((ep) => ({
-        id: anime.id,
-        title: anime.title,
-        coverImage: anime.coverImage,
-        episode: ep.episode,
-        airingAt: ep.airingAt,
-      }));
-
-      updatedCalendar = [...filteredCalendar, ...mapped];
-
-      console.log(`🎯 Cached ${mapped.length} episodes for ${anime.title.english || anime.title.romaji}`);
-
-      await new Promise((res) => setTimeout(res, 300)); // Slight delay to avoid rate limits
+      console.log("🎉 All episodes cached and saved");
+    } catch (error) {
+      console.error("❌ Error caching episodes:", error);
+      alert("Failed to cache episodes. Check console for details.");
+    } finally {
+      setLoading(false);
     }
-
-    localStorage.setItem("calendarList", JSON.stringify(updatedCalendar));
-    setCalendarList(updatedCalendar);
-
-    console.log("🎉 All episodes cached and saved");
-  } catch (error) {
-    console.error("❌ Error caching episodes:", error);
-    alert("Failed to cache episodes. Check console for details.");
-  } finally {
-    setLoading(false);
   }
-}
+
 
   // UI
 
@@ -314,8 +319,14 @@ export default function CacheViewer() {
                 lineHeight: 1,
                 transition: "background-color 0.3s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = loading ? "rgba(255, 69, 58, 0.85)" : "rgba(255, 69, 58, 1)")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 69, 58, 0.85)")}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = loading
+                  ? "rgba(255, 69, 58, 0.85)"
+                  : "rgba(255, 69, 58, 1)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "rgba(255, 69, 58, 0.85)")
+              }
             >
               🗑
             </button>
@@ -358,8 +369,8 @@ export default function CacheViewer() {
           >
             <h3 style={{ marginBottom: 20 }}>⚠️ Confirm Delete All Cache</h3>
             <p style={{ marginBottom: 30 }}>
-              Are you sure you want to delete <strong>all cached data</strong>? This action
-              cannot be undone.
+              Are you sure you want to delete <strong>all cached data</strong>? This
+              action cannot be undone.
             </p>
 
             <div style={{ display: "flex", justifyContent: "space-around" }}>
