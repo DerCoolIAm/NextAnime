@@ -1,19 +1,20 @@
 // DiscordNotifier.js
-export async function notifyDiscordBot(title) {
+export async function notifyDiscordBot(message, imageUrl = null) {
   try {
+    const payload = {
+      channelId: '1398663361159368857',
+      title: message,
+      imageUrl,
+    };
+
     await fetch('http://localhost:3000/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        channelId: '1398663361159368857',
-      }),
+      body: JSON.stringify(payload),
     });
-    console.log(`Discord notified about: ${title}`);
+
+    console.log(`Discord notified about: ${message}`);
   } catch (err) {
     console.error('Failed to notify Discord:', err);
   }
 }
-
-
-"1398663361159368857"
