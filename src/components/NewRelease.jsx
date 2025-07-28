@@ -1,17 +1,13 @@
 import React, { useEffect, useRef } from "react";
-import { notifyDiscordBot } from "../DiscordNotifier"; // adjust path if needed
+import { notifyDiscordBot } from "../utils/DiscordNotifier";
 
 export default function NewRelease({ watchingList }) {
   const notifiedReleases = useRef(new Set());
 
-  // Send a test notification once when the component mounts
-  useEffect(() => {
-    notifyDiscordBot("🛠️ Test notification from your anime website is working!");
-  }, []);
-
   useEffect(() => {
     const interval = setInterval(() => {
-      const now = Date.now() / 1000; // current Unix timestamp in seconds
+      console.log("Checking releases...");
+      const now = Date.now() / 1000;
 
       watchingList.forEach(async (anime) => {
         if (
@@ -23,10 +19,11 @@ export default function NewRelease({ watchingList }) {
 
           const title = anime.title.english || anime.title.romaji || "Unknown Anime";
 
+          console.log(`Notifying Discord about ${title}`);
           await notifyDiscordBot(`${title} episode ${anime.nextAiringEpisode.episode} just released!`);
         }
       });
-    }, 60 * 1000); // every 60 seconds
+    }, 60 * 1000);
 
     return () => clearInterval(interval);
   }, [watchingList]);

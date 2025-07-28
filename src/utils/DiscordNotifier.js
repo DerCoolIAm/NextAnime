@@ -1,7 +1,7 @@
 // DiscordNotifier.js
 export async function notifyDiscordBot(title) {
   try {
-    await fetch('https://your-discloud-app-url/notify', {
+    await fetch('http://localhost:3000/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

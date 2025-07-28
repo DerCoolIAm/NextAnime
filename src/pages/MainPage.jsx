@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import SavedAnimeHorizontal from "../components/SavedAnimeHorizontal";
 import UpcomingAnimeVertical from "../components/UpcomingAnimeVertical";
 import AnimeSearchAutocomplete from "../components/AnimeSearchAutocomplete";
+import NewRelease from "../components/NewRelease";
 import {
   loadWatchingList,
   saveWatchingList,
@@ -385,6 +386,8 @@ export default function MainPage() {
         calendarList={calendarList}
         onToggleCalendar={handleToggleCalendar}
       />
+
+      <NewRelease watchingList={watchingList} />
 
       <UpcomingAnimeVertical episodes={episodes} />
     </div>

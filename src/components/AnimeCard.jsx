@@ -7,7 +7,7 @@ export default function AnimeCard({ episode }) {
   } = episode;
 
   return (
-    <li
+    <div
       style={{
         display: "flex",
         background: "#232323ff",
@@ -59,7 +59,7 @@ export default function AnimeCard({ episode }) {
         <p
           style={{
             margin: "0 0 10px",
-            color: "#555",
+            color: "#aaa",
             fontStyle: "italic",
           }}
         >
@@ -74,6 +74,6 @@ export default function AnimeCard({ episode }) {
           <strong>Airs at:</strong> {new Date(airingAt * 1000).toLocaleString()}
         </p>
       </div>
-    </li>
+    </div>
   );
 }
