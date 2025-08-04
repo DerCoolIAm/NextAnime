@@ -5,10 +5,33 @@ export default function SavedAnimeHorizontal({
   watchingList,
   onDelete,
   onToggleFavorite,
-  calendarList,        // new prop
-  onToggleCalendar,    // new prop
+  calendarList,
+  onToggleCalendar,
 }) {
   if (watchingList.length === 0) return null;
+
+  const now = Date.now() / 1000;
+
+  // One-time fix: Replace outdated airingAt/episode with next upcoming
+  const adjustedList = watchingList.map((anime) => {
+    if (
+      anime.airingAt &&
+      anime.airingAt < now &&
+      anime.airingSchedule?.nodes
+    ) {
+      const nextEp = anime.airingSchedule.nodes.find(
+        (ep) => ep.airingAt > now
+      );
+      if (nextEp) {
+        return {
+          ...anime,
+          airingAt: nextEp.airingAt,
+          episode: nextEp.episode,
+        };
+      }
+    }
+    return anime;
+  });
 
   return (
     <div
@@ -24,14 +47,14 @@ export default function SavedAnimeHorizontal({
         paddingRight: 20,
       }}
     >
-      {watchingList.map((anime) => (
+      {adjustedList.map((anime) => (
         <SavedAnimeCard
-        key={anime.id}
-        anime={anime}
-        onDelete={onDelete}
-        onToggleFavorite={onToggleFavorite}
-        onToggleCalendar={onToggleCalendar}  // Pass toggle function
-        calendarList={calendarList}          // Pass calendar list
+          key={anime.id}
+          anime={anime}
+          onDelete={onDelete}
+          onToggleFavorite={onToggleFavorite}
+          onToggleCalendar={onToggleCalendar}
+          calendarList={calendarList}
         />
       ))}
     </div>

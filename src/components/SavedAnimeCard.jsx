@@ -8,8 +8,9 @@ export default function SavedAnimeCard({
   calendarList,
 }) {
   const [countdown, setCountdown] = useState("");
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Update countdown timer for airing episode
+  // Update countdown timer every second
   useEffect(() => {
     if (!anime.airingAt) {
       setCountdown("");
@@ -45,12 +46,28 @@ export default function SavedAnimeCard({
     return () => clearInterval(timer);
   }, [anime.airingAt]);
 
+  // Auto-refresh view after episode airs
+  useEffect(() => {
+    if (!anime.airingAt) return;
+
+    const now = Date.now();
+    const airingTime = anime.airingAt * 1000;
+    const delay = airingTime - now + 1000; // +1s buffer
+
+    if (delay > 0) {
+      const timeout = setTimeout(() => {
+        setCurrentTime(Date.now()); // Trigger re-render
+      }, delay);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [anime.airingAt]);
+
   const isAiring = anime.episode !== null && anime.airingAt !== null;
   const airingText = isAiring
     ? `Ep ${anime.episode} - ${countdown}`
     : "Finished airing";
 
-  // Check if anime is in calendar list
   const isInCalendar = calendarList.some((a) => a.id === anime.id);
 
   return (
@@ -106,7 +123,9 @@ export default function SavedAnimeCard({
             {anime.title.english || anime.title.romaji}
           </h4>
 
-          <p style={{ fontSize: 12, color: "#ccc", marginTop: 4 }}>{airingText}</p>
+          <p style={{ fontSize: 12, color: "#ccc", marginTop: 4 }}>
+            {airingText}
+          </p>
         </div>
 
         <div>
@@ -131,7 +150,9 @@ export default function SavedAnimeCard({
                 fontSize: 18,
                 lineHeight: 1,
               }}
-              aria-label={anime.favorited ? "Unfavorite anime" : "Favorite anime"}
+              aria-label={
+                anime.favorited ? "Unfavorite anime" : "Favorite anime"
+              }
               title={anime.favorited ? "Unfavorite" : "Favorite"}
             >
               {anime.favorited ? "★" : "☆"}
