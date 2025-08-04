@@ -27,6 +27,7 @@ export default function MainPage() {
   const [addName, setAddName] = useState("");
   const [showDuplicatePopup, setShowDuplicatePopup] = useState(false);
   const navigate = useNavigate();
+  const VERSION = "v1.0.0"
 
   // Track previous watchingList IDs for comparison
   const prevWatchingListIds = useRef(new Set(watchingList.map((a) => a.id)));
@@ -226,170 +227,188 @@ export default function MainPage() {
     return true;
   }
 
-  return (
+return (
+  <div
+    style={{
+      maxWidth: 900,
+      margin: "40px auto",
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+      color: "#eee",
+      padding: "0 20px",
+      backgroundColor: "#121212",
+      borderRadius: 12,
+      boxShadow: "0 0 20px rgba(0,0,0,0.7)",
+      position: "relative", // important for absolute positioning inside
+    }}
+  >
+    {/* Version label */}
     <div
       style={{
-        maxWidth: 900,
-        margin: "40px auto",
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        color: "#eee",
-        padding: "0 20px",
-        backgroundColor: "#121212",
-        borderRadius: 12,
-        boxShadow: "0 0 20px rgba(0,0,0,0.7)",
-        position: "relative",
+        position: "fixed",
+        top: 10,
+        left: 10,
+        // backgroundColor: "rgba(255, 242, 242, 0.7)",
+        color: "white",
+        padding: "4px 8px",
+        fontSize: 12,
+        fontWeight: "bold",
+        borderRadius: 4,
+        zIndex: 1001,
+        userSelect: "none",
       }}
     >
-      {showDuplicatePopup && (
-        <div
-          style={{
-            position: "fixed",
-            top: 20,
-            right: 20,
-            backgroundColor: "rgba(255, 69, 58, 0.95)",
-            color: "white",
-            padding: "12px 20px",
-            borderRadius: 8,
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-            fontWeight: "700",
-            zIndex: 1000,
-          }}
-        >
-          This anime is already in your watching list!
-        </div>
-      )}
+      {VERSION}
+    </div>
 
-      <button
-        onClick={() => navigate("/calendar")}
-        title="View Calendar"
+    {showDuplicatePopup && (
+      <div
         style={{
-          position: "absolute",
+          position: "fixed",
           top: 20,
           right: 20,
-          backgroundColor: "transparent",
-          border: "none",
-          fontSize: 28,
-          cursor: "pointer",
-          color: "#61dafb",
-          zIndex: 10,
-        }}
-      >
-        📅
-      </button>
-      <button
-        onClick={() => navigate("/animelist")}
-        title="View Anime List"
-        style={{
-          position: "absolute",
-          top: 20,
-          right: 70,
-          backgroundColor: "transparent",
-          border: "none",
-          fontSize: 28,
-          cursor: "pointer",
-          color: "#61dafb",
-          zIndex: 10,
-        }}
-      >
-        📘
-      </button>
-
-      <button
-        onClick={() => navigate("/cache")}
-        title="View Cached Data"
-        style={{
-          position: "absolute",
-          top: 20,
-          left: 20,
-          backgroundColor: "transparent",
-          border: "none",
-          fontSize: 28,
-          cursor: "pointer",
-          color: "#61dafb",
-          zIndex: 10,
-        }}
-      >
-        🧠
-      </button>
-      <h2
-        style={{
-          textAlign: "center",
-          marginBottom: 30,
-          backgroundColor: "#f5f5f5",
-          color: "#333",
-          padding: "15px 20px",
+          backgroundColor: "rgba(255, 69, 58, 0.95)",
+          color: "white",
+          padding: "12px 20px",
           borderRadius: 8,
-          maxWidth: 400,
-          marginLeft: "auto",
-          marginRight: "auto",
-          fontWeight: 700,
+          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+          fontWeight: "700",
+          zIndex: 1000,
         }}
       >
-        📺 Upcoming Anime Episodes
-      </h2>
+        This anime is already in your watching list!
+      </div>
+    )}
+
+    <button
+      onClick={() => navigate("/calendar")}
+      title="View Calendar"
+      style={{
+        position: "absolute",
+        top: 20,
+        right: 20,
+        backgroundColor: "transparent",
+        border: "none",
+        fontSize: 28,
+        cursor: "pointer",
+        color: "#61dafb",
+        zIndex: 10,
+      }}
+    >
+      📅
+    </button>
+    <button
+      onClick={() => navigate("/animelist")}
+      title="View Anime List"
+      style={{
+        position: "absolute",
+        top: 20,
+        right: 70,
+        backgroundColor: "transparent",
+        border: "none",
+        fontSize: 28,
+        cursor: "pointer",
+        color: "#61dafb",
+        zIndex: 10,
+      }}
+    >
+      📘
+    </button>
+
+    <button
+      onClick={() => navigate("/cache")}
+      title="View Cached Data"
+      style={{
+        position: "absolute",
+        top: 20,
+        left: 20,
+        backgroundColor: "transparent",
+        border: "none",
+        fontSize: 28,
+        cursor: "pointer",
+        color: "#61dafb",
+        zIndex: 10,
+      }}
+    >
+      🧠
+    </button>
+    <h2
+      style={{
+        textAlign: "center",
+        marginBottom: 30,
+        backgroundColor: "#f5f5f5",
+        color: "#333",
+        padding: "15px 20px",
+        borderRadius: 8,
+        maxWidth: 400,
+        marginLeft: "auto",
+        marginRight: "auto",
+        fontWeight: 700,
+      }}
+    >
+      📺 Upcoming Anime Episodes
+    </h2>
+
+    <div
+      style={{
+        backgroundColor: "#282828",
+        padding: 20,
+        borderRadius: 12,
+        marginBottom: 30,
+        textAlign: "center",
+      }}
+    >
+      <p style={{ marginBottom: 10 }}>
+        Your watching list — Add any anime by name:
+      </p>
 
       <div
         style={{
-          backgroundColor: "#282828",
-          padding: 20,
-          borderRadius: 12,
-          marginBottom: 30,
-          textAlign: "center",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "10px",
+          marginBottom: "16px",
         }}
       >
-        <p style={{ marginBottom: 10 }}>
-          Your watching list — Add any anime by name:
-        </p>
-
-        <div
+        <div style={{ width: "300px" }}>
+          <AnimeSearchAutocomplete
+            value={addName}
+            onChange={setAddName}
+            onSelect={setAddName}
+          />
+        </div>
+        <button
+          onClick={addAnime}
           style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "10px",
-            marginBottom: "16px",
+            padding: "10px 16px",
+            backgroundColor: "#6dd6ff",
+            color: "#000",
+            fontWeight: "bold",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            flexShrink: 0,
+            marginLeft: "25px",
           }}
         >
-          <div style={{ width: "300px" }}>
-            <AnimeSearchAutocomplete
-              value={addName}
-              onChange={setAddName}
-              onSelect={setAddName}
-            />
-          </div>
-          <button
-            onClick={addAnime}
-            style={{
-              padding: "10px 16px",
-              backgroundColor: "#6dd6ff",
-              // light blue from your palette
-              color: "#000",
-              fontWeight: "bold",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              flexShrink: 0,
-              marginLeft: "25px",
-            }}
-          >
-            Add
-          </button>
-        </div>
-
-        {error && <p style={{ color: "tomato", marginTop: 10 }}>{error}</p>}
+          Add
+        </button>
       </div>
 
-      <SavedAnimeHorizontal
-        watchingList={sortedWatchingList}
-        onDelete={deleteAnime}
-        onToggleFavorite={toggleFavorite}
-        calendarList={calendarList}
-        onToggleCalendar={handleToggleCalendar}
-      />
-
-      <NewRelease watchingList={watchingList} />
-
-      <UpcomingAnimeVertical episodes={episodes} />
+      {error && <p style={{ color: "tomato", marginTop: 10 }}>{error}</p>}
     </div>
-  );
+
+    <SavedAnimeHorizontal
+      watchingList={sortedWatchingList}
+      onDelete={deleteAnime}
+      onToggleFavorite={toggleFavorite}
+      calendarList={calendarList}
+      onToggleCalendar={handleToggleCalendar}
+    />
+
+    <NewRelease watchingList={watchingList} />
+
+    <UpcomingAnimeVertical episodes={episodes} />
+  </div>
+ );
 }
