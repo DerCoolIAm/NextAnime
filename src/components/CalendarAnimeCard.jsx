@@ -30,9 +30,17 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
       const currentWatched = prev[anime.id] || 0;
       // If already watched this episode, unwatch it (decrement)
       // else set watched up to this episode
-      const newWatched =
-        currentWatched >= anime.episode ? currentWatched - 1 : anime.episode;
+      console.log("anime.episode:", anime.episode);
+      console.log("currentWatched:", currentWatched);
 
+      let newWatched;
+
+      if (currentWatched === anime.episode || currentWatched > anime.episode) {
+        newWatched = anime.episode - 1;
+      } else {
+        newWatched = anime.episode;
+      }
+      console.log("secondWatched:", currentWatched);
       // Build new state
       const updated = { ...prev };
       if (newWatched <= 0) {

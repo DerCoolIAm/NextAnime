@@ -27,7 +27,7 @@ function fixAiringTimes(watchingList) {
     if (
       anime.airingAt &&
       anime.airingAt < now &&
-      anime.fullAiringSchedule?.length // you use fullAiringSchedule in your code
+      anime.fullAiringSchedule?.length
     ) {
       const nextEp = anime.fullAiringSchedule.find((ep) => ep.airingAt > now);
       if (nextEp) {
