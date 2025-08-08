@@ -1,3 +1,14 @@
+import {
+  getAuth,
+  onAuthStateChanged,
+} from "firebase/auth";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+} from "firebase/firestore";
+import { app } from "../firebase";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import SavedAnimeHorizontal from "../components/SavedAnimeHorizontal";
@@ -19,7 +30,55 @@ import {
   fetchAnimeWithSchedules,
 } from "../utils/anilistApi";
 
-// One-time fix function
+// Firestore setup
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Helper: load watching list from Firestore for given uid
+async function loadFirestoreWatchingList(uid) {
+  if (!uid) return [];
+  try {
+    const docRef = doc(db, "users", uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data().firebasewatchedlist || [];
+    }
+  } catch (e) {
+    console.error("Error loading Firestore watching list:", e);
+  }
+  return [];
+}
+
+// Helper: save watching list to Firestore for given uid
+async function saveFirestoreWatchingList(uid, list) {
+  if (!uid) return;
+  try {
+    const docRef = doc(db, "users", uid);
+    await setDoc(docRef, { firebasewatchedlist: list }, { merge: true });
+  } catch (e) {
+    console.error("Error saving Firestore watching list:", e);
+  }
+}
+
+// Merge two lists of anime, prefer local entries but add missing from Firestore
+function mergeLists(localList, firestoreList) {
+  const map = new Map();
+
+  // Add all local entries first (preserves local edits)
+  for (const anime of localList) {
+    map.set(anime.id, anime);
+  }
+
+  // Add Firestore entries if not present locally
+  for (const anime of firestoreList) {
+    if (!map.has(anime.id)) {
+      map.set(anime.id, anime);
+    }
+  }
+
+  return Array.from(map.values());
+}
+
 function fixAiringTimes(watchingList) {
   const now = Date.now() / 1000;
 
@@ -50,21 +109,62 @@ export default function MainPage() {
   const [addName, setAddName] = useState("");
   const [showDuplicatePopup, setShowDuplicatePopup] = useState(false);
   const navigate = useNavigate();
-  const VERSION = "v1.0.1";
+  const VERSION = "Beta v2.0.0";
 
-  // Track previous watchingList IDs for comparison
+  const [user, setUser] = useState(null);
   const prevWatchingListIds = useRef(new Set());
+  const prevWatchingList = useRef([]);
 
-  // On mount: load watching list, fix airing times once, save and set state
+  // Auth listener
   useEffect(() => {
-    let storedList = loadWatchingList() || [];
-    const fixedList = fixAiringTimes(storedList);
-    setWatchingList(fixedList);
-    saveWatchingList(fixedList);
-    prevWatchingListIds.current = new Set(fixedList.map((a) => a.id));
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        // On login, sync Firestore + localStorage lists
+        await syncWatchingList(firebaseUser.uid);
+      } else {
+        // Logged out: load localStorage only
+        const localList = loadWatchingList() || [];
+        const fixedList = fixAiringTimes(localList);
+        setWatchingList(fixedList);
+        prevWatchingListIds.current = new Set(fixedList.map((a) => a.id));
+        prevWatchingList.current = fixedList;
+      }
+    });
+    return unsubscribe;
   }, []);
 
-  // Fetch general upcoming anime (for UpcomingAnimeVertical)
+  // Sync Firestore and localStorage watching lists without deleting local data
+  async function syncWatchingList(uid) {
+    try {
+      const firestoreList = await loadFirestoreWatchingList(uid);
+      const localList = loadWatchingList() || [];
+      const merged = mergeLists(localList, firestoreList);
+      const fixedMerged = fixAiringTimes(merged);
+      setWatchingList(fixedMerged);
+      prevWatchingListIds.current = new Set(fixedMerged.map((a) => a.id));
+      prevWatchingList.current = fixedMerged;
+
+      // Save merged back to Firestore and localStorage so both sides are synced
+      saveWatchingList(fixedMerged);
+      await saveFirestoreWatchingList(uid, fixedMerged);
+    } catch (e) {
+      console.error("Error syncing watching list:", e);
+    }
+  }
+
+  // On mount: if no user logged in yet, load localStorage list
+  useEffect(() => {
+    if (!user) {
+      const localList = loadWatchingList() || [];
+      const fixedList = fixAiringTimes(localList);
+      setWatchingList(fixedList);
+      prevWatchingListIds.current = new Set(fixedList.map((a) => a.id));
+      prevWatchingList.current = fixedList;
+    }
+  }, [user]);
+
+  // Fetch general upcoming anime
   useEffect(() => {
     async function loadUpcoming() {
       try {
@@ -83,7 +183,6 @@ export default function MainPage() {
       if (watchingList.length === 0) return;
 
       const currentIds = new Set(watchingList.map((a) => a.id));
-      // Skip if IDs haven't changed
       if (areSetsEqual(currentIds, prevWatchingListIds.current)) return;
       prevWatchingListIds.current = currentIds;
 
@@ -100,6 +199,10 @@ export default function MainPage() {
             };
           });
           saveWatchingList(updated);
+          // Also update Firestore if logged in
+          if (user) {
+            saveFirestoreWatchingList(user.uid, updated);
+          }
           return updated;
         });
       } catch (err) {
@@ -107,38 +210,27 @@ export default function MainPage() {
       }
     }
     loadSchedules();
-  }, [watchingList]);
+  }, [watchingList, user]);
 
   // Save calendarList when it changes
   useEffect(() => {
     saveCalendarList(calendarList);
   }, [calendarList]);
 
-  // --- FIXED: Only fetch full airing schedule for newly added anime ---
-  const prevWatchingList = useRef(watchingList);
-
+  // Fetch full airing schedule for newly added anime
   useEffect(() => {
     async function fetchScheduleForNewAnime() {
-      // Detect newly added anime by comparing IDs
       const oldIds = new Set(prevWatchingList.current.map((a) => a.id));
       const newAnime = watchingList.find((a) => !oldIds.has(a.id));
 
       if (!newAnime) {
         prevWatchingList.current = watchingList;
-        return; // no new anime, skip
+        return;
       }
 
       try {
         const schedule = await fetchFullAiringSchedule(newAnime.id);
-        const newEpisodes = schedule.map((ep) => ({
-          id: newAnime.id,
-          title: newAnime.title,
-          coverImage: newAnime.coverImage,
-          episode: ep.episode,
-          airingAt: ep.airingAt,
-        }));
-
-        // (You probably want to do something with newEpisodes here or update state)
+        // You can decide how to use this schedule here...
 
       } catch (err) {
         console.error("Error fetching full airing schedule for new anime:", err);
@@ -149,7 +241,7 @@ export default function MainPage() {
     fetchScheduleForNewAnime();
   }, [watchingList]);
 
-  // Add anime by name using API helper
+  // Add anime by name
   async function addAnime() {
     setError("");
     const searchName = addName.trim();
@@ -157,9 +249,6 @@ export default function MainPage() {
 
     try {
       const newAnime = await fetchAnimeByName(searchName);
-
-      console.log("Anime to add:", newAnime);
-      console.log("Calling fetchAnimeWithSchedules with id:", newAnime?.id);
 
       if (!newAnime) {
         setError("Anime not found on AniList");
@@ -195,6 +284,11 @@ export default function MainPage() {
       const updatedList = [...watchingList, updatedAnime];
       setWatchingList(updatedList);
       saveWatchingList(updatedList);
+
+      if (user) {
+        await saveFirestoreWatchingList(user.uid, updatedList);
+      }
+
       setAddName("");
     } catch (err) {
       setError("Error fetching anime");
@@ -204,16 +298,13 @@ export default function MainPage() {
 
   function handleToggleCalendar(anime) {
     setCalendarList((prev) => {
-      // Check if any episodes of this anime are in the calendar
       const isInCalendar = prev.some((ep) => ep.id === anime.id);
 
       if (isInCalendar) {
-        // Remove all episodes of this anime
         const filtered = prev.filter((ep) => ep.id !== anime.id);
         saveCalendarList(filtered);
         return filtered;
       } else {
-        // Add all episodes from fullAiringSchedule as separate calendar entries
         const episodesToAdd = (anime.fullAiringSchedule || []).map((ep) => ({
           id: anime.id,
           title: anime.title,
@@ -234,6 +325,10 @@ export default function MainPage() {
     setWatchingList(filtered);
     saveWatchingList(filtered);
 
+    if (user) {
+      saveFirestoreWatchingList(user.uid, filtered);
+    }
+
     const filteredCalendar = calendarList.filter((a) => a.id !== id);
     setCalendarList(filteredCalendar);
     saveCalendarList(filteredCalendar);
@@ -245,13 +340,16 @@ export default function MainPage() {
     );
     setWatchingList(updated);
     saveWatchingList(updated);
+
+    if (user) {
+      saveFirestoreWatchingList(user.uid, updated);
+    }
   }
 
   const sortedWatchingList = [...watchingList].sort(
     (a, b) => (a.airingAt || 0) - (b.airingAt || 0)
   );
 
-  // Helper for set equality
   function areSetsEqual(a, b) {
     if (a.size !== b.size) return false;
     for (const item of a) if (!b.has(item)) return false;
@@ -269,10 +367,9 @@ export default function MainPage() {
         backgroundColor: "#121212",
         borderRadius: 12,
         boxShadow: "0 0 20px rgba(0,0,0,0.7)",
-        position: "relative", // important for absolute positioning inside
+        position: "relative",
       }}
     >
-      {/* Version label */}
       <div
         style={{
           position: "fixed",
@@ -361,6 +458,45 @@ export default function MainPage() {
       >
         🧠
       </button>
+      {user ? (
+        <button
+          onClick={() => navigate("/user")}
+          title={`Logged in as ${user.email}`}
+          style={{
+            position: "fixed",
+            top: 10,
+            right: 10,
+            backgroundColor: "transparent",
+            border: "none",
+            fontSize: 28,
+            cursor: "pointer",
+            color: "#61dafb",
+            zIndex: 10,
+            fontWeight: "bold",
+          }}
+        >
+          👤
+        </button>
+      ) : (
+        <button
+          onClick={() => navigate("/login")}
+          title="Login or Signup"
+          style={{
+            position: "fixed",
+            top: 10,
+            right: 10,
+            backgroundColor: "transparent",
+            border: "none",
+            fontSize: 28,
+            cursor: "pointer",
+            color: "#61dafb",
+            zIndex: 10,
+          }}
+        >
+          🔐
+        </button>
+      )}
+
       <h2
         style={{
           textAlign: "center",

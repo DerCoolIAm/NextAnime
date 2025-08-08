@@ -73,7 +73,7 @@ export default function NewRelease({ watchingList }) {
       }
     }
 
-    checkReleases(); // Initial check
+    // checkReleases(); // Initial check
     const interval = setInterval(checkReleases, 60 * 1000); // Every 60s
     return () => clearInterval(interval);
   }, [watchingList]);
