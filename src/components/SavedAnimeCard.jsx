@@ -79,7 +79,8 @@ export default function SavedAnimeCard({
         height: 440,
         borderRadius: 12,
         overflow: "hidden",
-        backgroundColor: "#1e1e1e",
+        backgroundColor: anime.favorited ? "#2a2a2a" : "#1e1e1e",
+        border: anime.favorited ? "2px solid #61dafb" : "none",
         flexShrink: 0,
         display: "flex",
         flexDirection: "column",
@@ -87,6 +88,7 @@ export default function SavedAnimeCard({
         boxSizing: "border-box",
         color: "#eee",
         userSelect: "none",
+        boxShadow: anime.favorited ? "0 0 15px rgba(97, 218, 251, 0.3)" : "none",
       }}
     >
       <img

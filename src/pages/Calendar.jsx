@@ -101,9 +101,16 @@ export default function Calendar() {
     }
   });
 
-  // Sort animes by airingAt ascending for each day
+  // Sort animes by favorite status first, then by airingAt ascending for each day
   Object.keys(animeByDate).forEach((key) => {
-    animeByDate[key].sort((a, b) => a.airingAt - b.airingAt);
+    animeByDate[key].sort((a, b) => {
+      // First, sort by favorite status (favorites first)
+      if (a.favorited && !b.favorited) return -1;
+      if (!a.favorited && b.favorited) return 1;
+      
+      // Then, within each group (favorites and non-favorites), sort by airing time
+      return a.airingAt - b.airingAt;
+    });
   });
 
   const weekDates = getWeekDates(startDate);

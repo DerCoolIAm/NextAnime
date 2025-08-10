@@ -61,7 +61,11 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
         display: "flex",
         flexDirection: "column",
         gap: 4,
-        backgroundColor: isWatched ? "#2e2e2e" : "#3a3a3a",
+        backgroundColor: isWatched 
+          ? "#2e2e2e" 
+          : anime.favorited 
+            ? "#2a2a2a" 
+            : "#3a3a3a",
         filter: isWatched ? "grayscale(70%)" : "none",
         borderRadius: 8,
         padding: 8,
@@ -69,6 +73,8 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
         minHeight: 90,
         overflow: "hidden",
         transition: "background-color 0.3s ease, filter 0.3s ease",
+        border: anime.favorited ? "2px solid #61dafb" : "none",
+        boxShadow: anime.favorited ? "0 0 15px rgba(97, 218, 251, 0.3)" : "none",
       }}
     >
       {/* Top Row: Image + Title */}

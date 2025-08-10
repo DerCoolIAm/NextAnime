@@ -217,6 +217,20 @@ export default function MainPage() {
     saveCalendarList(calendarList);
   }, [calendarList]);
 
+  // Sync calendar list with current favorite status from watching list
+  useEffect(() => {
+    if (watchingList.length > 0) {
+      setCalendarList((prev) => {
+        const updatedCalendar = prev.map((ep) => {
+          const anime = watchingList.find(a => a.id === ep.id);
+          return anime ? { ...ep, favorited: anime.favorited || false } : ep;
+        });
+        saveCalendarList(updatedCalendar);
+        return updatedCalendar;
+      });
+    }
+  }, [watchingList]);
+
   // Fetch full airing schedule for newly added anime
   useEffect(() => {
     async function fetchScheduleForNewAnime() {
@@ -242,9 +256,9 @@ export default function MainPage() {
   }, [watchingList]);
 
   // Add anime by name
-  async function addAnime() {
+  async function addAnime(animeName = null) {
     setError("");
-    const searchName = addName.trim();
+    const searchName = (animeName || addName).trim();
     if (!searchName) return;
 
     try {
@@ -289,12 +303,15 @@ export default function MainPage() {
         await saveFirestoreWatchingList(user.uid, updatedList);
       }
 
-      setAddName("");
-    } catch (err) {
-      setError("Error fetching anime");
-      console.error("Error in addAnime:", err);
-    }
-  }
+             // Only clear addName if it was set from the input field
+       if (!animeName) {
+         setAddName("");
+       }
+     } catch (err) {
+       setError("Error fetching anime");
+       console.error("Error in addAnime:", err);
+     }
+   }
 
   function handleToggleCalendar(anime) {
     setCalendarList((prev) => {
@@ -311,6 +328,7 @@ export default function MainPage() {
           coverImage: anime.coverImage,
           episode: ep.episode,
           airingAt: ep.airingAt,
+          favorited: anime.favorited || false,
         }));
 
         const updated = [...prev, ...episodesToAdd];
@@ -344,11 +362,28 @@ export default function MainPage() {
     if (user) {
       saveFirestoreWatchingList(user.uid, updated);
     }
+
+    // Update calendar list to reflect favorite status changes
+    const anime = updated.find(a => a.id === id);
+    if (anime) {
+      setCalendarList((prev) => {
+        const updatedCalendar = prev.map((ep) => 
+          ep.id === id ? { ...ep, favorited: anime.favorited } : ep
+        );
+        saveCalendarList(updatedCalendar);
+        return updatedCalendar;
+      });
+    }
   }
 
-  const sortedWatchingList = [...watchingList].sort(
-    (a, b) => (a.airingAt || 0) - (b.airingAt || 0)
-  );
+  const sortedWatchingList = [...watchingList].sort((a, b) => {
+    // First, sort by favorite status (favorites first)
+    if (a.favorited && !b.favorited) return -1;
+    if (!a.favorited && b.favorited) return 1;
+    
+    // Then, within each group (favorites and non-favorites), sort by airing time
+    return (a.airingAt || 0) - (b.airingAt || 0);
+  });
 
   function areSetsEqual(a, b) {
     if (a.size !== b.size) return false;
@@ -574,7 +609,11 @@ export default function MainPage() {
 
       <NewRelease watchingList={watchingList} />
 
-      <UpcomingAnimeVertical episodes={episodes} />
+      <UpcomingAnimeVertical 
+        episodes={episodes} 
+        watchingList={watchingList}
+        onAddAnime={addAnime}
+      />
     </div>
   );
 }
