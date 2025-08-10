@@ -28,7 +28,15 @@ import {
   fetchAnimeByName,
   fetchNextAiringSchedules,
   fetchAnimeWithSchedules,
+  fetchAnimeByNameWithDetails,
+  fetchAiringSchedulesWithDetails,
 } from "../utils/anilistApi";
+import {
+  getCachedUpcomingAnime,
+  setCachedUpcomingAnime,
+  getCachedAnimeDetails,
+  setCachedAnimeDetails,
+} from "../utils/cacheUtils";
 
 // Firestore setup
 const auth = getAuth(app);
@@ -164,12 +172,21 @@ export default function MainPage() {
     }
   }, [user]);
 
-  // Fetch general upcoming anime
+  // Fetch general upcoming anime (with caching)
   useEffect(() => {
     async function loadUpcoming() {
       try {
+        // Check cache first
+        const cached = getCachedUpcomingAnime();
+        if (cached) {
+          setEpisodes(cached);
+          return;
+        }
+
+        // Fetch from API if not cached
         const upcoming = await fetchNextAiringSchedules(10);
         setEpisodes(upcoming);
+        setCachedUpcomingAnime(upcoming);
       } catch (err) {
         console.error("Error fetching upcoming anime:", err);
       }
@@ -177,7 +194,7 @@ export default function MainPage() {
     loadUpcoming();
   }, []);
 
-  // Fetch airing schedules for watching list (batched, on change of IDs)
+  // Fetch airing schedules for watching list (optimized with caching)
   useEffect(() => {
     async function loadSchedules() {
       if (watchingList.length === 0) return;
@@ -187,16 +204,31 @@ export default function MainPage() {
       prevWatchingListIds.current = currentIds;
 
       try {
-        const schedules = await fetchAiringSchedulesByIds([...currentIds]);
+        // Use optimized query that includes full anime details
+        const schedulesWithDetails = await fetchAiringSchedulesWithDetails([...currentIds]);
 
         setWatchingList((oldList) => {
           const updated = oldList.map((anime) => {
-            const schedule = schedules.find((sch) => sch.media.id === anime.id);
-            return {
-              ...anime,
-              episode: schedule?.episode ?? anime.episode,
-              airingAt: schedule?.airingAt ?? anime.airingAt,
-            };
+            const scheduleData = schedulesWithDetails.find((sch) => sch.media.id === anime.id);
+            if (scheduleData) {
+              // Cache the full anime details for future use
+              setCachedAnimeDetails(anime.id, scheduleData.media);
+              
+              return {
+                ...anime,
+                episode: scheduleData.episode ?? anime.episode,
+                airingAt: scheduleData.airingAt ?? anime.airingAt,
+                // Update with fresh data if available
+                title: scheduleData.media.title || anime.title,
+                coverImage: scheduleData.media.coverImage || anime.coverImage,
+                episodes: scheduleData.media.episodes || anime.episodes,
+                siteUrl: scheduleData.media.siteUrl || anime.siteUrl,
+                genres: scheduleData.media.genres || anime.genres,
+                fullAiringSchedule: scheduleData.media.airingSchedule?.nodes || anime.fullAiringSchedule,
+                nextAiringEpisode: scheduleData.media.nextAiringEpisode || anime.nextAiringEpisode,
+              };
+            }
+            return anime;
           });
           saveWatchingList(updated);
           // Also update Firestore if logged in
@@ -231,65 +263,44 @@ export default function MainPage() {
     }
   }, [watchingList]);
 
-  // Fetch full airing schedule for newly added anime
+  // Track watching list changes for optimization
   useEffect(() => {
-    async function fetchScheduleForNewAnime() {
-      const oldIds = new Set(prevWatchingList.current.map((a) => a.id));
-      const newAnime = watchingList.find((a) => !oldIds.has(a.id));
-
-      if (!newAnime) {
-        prevWatchingList.current = watchingList;
-        return;
-      }
-
-      try {
-        const schedule = await fetchFullAiringSchedule(newAnime.id);
-        // You can decide how to use this schedule here...
-
-      } catch (err) {
-        console.error("Error fetching full airing schedule for new anime:", err);
-      }
-
-      prevWatchingList.current = watchingList;
-    }
-    fetchScheduleForNewAnime();
+    prevWatchingList.current = watchingList;
   }, [watchingList]);
 
-  // Add anime by name from input field
+  // Add anime by name from input field (optimized)
   async function addAnime() {
     setError("");
     const searchName = String(addName || "").trim();
     if (!searchName) return;
 
     try {
-      const newAnime = await fetchAnimeByName(searchName);
+      // Use optimized query that gets all details in one request
+      const detailedAnime = await fetchAnimeByNameWithDetails(searchName);
 
-      if (!newAnime) {
+      if (!detailedAnime) {
         setError("Anime not found on AniList");
         return;
       }
 
-      if (watchingList.some((a) => a.id === newAnime.id)) {
+      if (watchingList.some((a) => a.id === detailedAnime.id)) {
         setShowDuplicatePopup(true);
         setTimeout(() => setShowDuplicatePopup(false), 3000);
         return;
       }
 
-      const detailedAnime = await fetchAnimeWithSchedules(newAnime.id);
-      if (!detailedAnime) {
-        setError("Error fetching detailed anime info. Please try again.");
-        return;
-      }
+      // Cache the anime details for future use
+      setCachedAnimeDetails(detailedAnime.id, detailedAnime);
 
       const updatedAnime = {
         id: detailedAnime.id,
         title: detailedAnime.title,
         coverImage: detailedAnime.coverImage,
         episodes: detailedAnime.episodes || 0,
-        siteUrl: newAnime.siteUrl,
-        genres: newAnime.genres || [],
+        siteUrl: detailedAnime.siteUrl,
+        genres: detailedAnime.genres || [],
         cachedEpisodes: 0,
-        isFavorite: false,
+        favorited: false,
         watchedUntil: 0,
         fullAiringSchedule: detailedAnime.airingSchedule?.nodes || [],
         nextAiringEpisode: detailedAnime.nextAiringEpisode || null,
@@ -310,41 +321,39 @@ export default function MainPage() {
     }
   }
 
-  // Add anime from upcoming anime list (already knows the anime name)
+  // Add anime from upcoming anime list (optimized)
   async function addAnimeFromUpcoming(animeName) {
     setError("");
     const searchName = String(animeName || "").trim();
     if (!searchName) return;
 
     try {
-      const newAnime = await fetchAnimeByName(searchName);
+      // Use optimized query that gets all details in one request
+      const detailedAnime = await fetchAnimeByNameWithDetails(searchName);
 
-      if (!newAnime) {
+      if (!detailedAnime) {
         setError("Anime not found on AniList");
         return;
       }
 
-      if (watchingList.some((a) => a.id === newAnime.id)) {
+      if (watchingList.some((a) => a.id === detailedAnime.id)) {
         setShowDuplicatePopup(true);
         setTimeout(() => setShowDuplicatePopup(false), 3000);
         return;
       }
 
-      const detailedAnime = await fetchAnimeWithSchedules(newAnime.id);
-      if (!detailedAnime) {
-        setError("Error fetching detailed anime info. Please try again.");
-        return;
-      }
+      // Cache the anime details for future use
+      setCachedAnimeDetails(detailedAnime.id, detailedAnime);
 
       const updatedAnime = {
         id: detailedAnime.id,
         title: detailedAnime.title,
         coverImage: detailedAnime.coverImage,
         episodes: detailedAnime.episodes || 0,
-        siteUrl: newAnime.siteUrl,
-        genres: newAnime.genres || [],
+        siteUrl: detailedAnime.siteUrl,
+        genres: detailedAnime.genres || [],
         cachedEpisodes: 0,
-        isFavorite: false,
+        favorited: false,
         watchedUntil: 0,
         fullAiringSchedule: detailedAnime.airingSchedule?.nodes || [],
         nextAiringEpisode: detailedAnime.nextAiringEpisode || null,
@@ -357,16 +366,11 @@ export default function MainPage() {
       if (user) {
         await saveFirestoreWatchingList(user.uid, updatedList);
       }
-
-             // Only clear addName if it was set from the input field
-       if (!animeName) {
-         setAddName("");
-       }
-     } catch (err) {
-       setError("Error fetching anime");
-       console.error("Error in addAnime:", err);
-     }
-   }
+    } catch (err) {
+      setError("Error fetching anime");
+      console.error("Error in addAnimeFromUpcoming:", err);
+    }
+  }
 
   function handleToggleCalendar(anime) {
     setCalendarList((prev) => {

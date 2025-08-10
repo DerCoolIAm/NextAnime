@@ -187,3 +187,130 @@ export async function fetchAnimeWithSchedules(animeId) {
   const data = await fetchGraphQL(query, variables);
   return data?.Media;
 }
+
+// Optimized: Fetch anime by name with full details in one request
+export async function fetchAnimeByNameWithDetails(searchName) {
+  const query = `
+    query ($search: String) {
+      Media(search: $search, type: ANIME, status: RELEASING) {
+        id
+        title {
+          romaji
+          english
+          native
+        }
+        coverImage {
+          extraLarge
+        }
+        episodes
+        siteUrl
+        genres
+        nextAiringEpisode {
+          episode
+          airingAt
+        }
+        airingSchedule(notYetAired: false, perPage: 50) {
+          nodes {
+            episode
+            airingAt
+          }
+        }
+      }
+    }
+  `;
+  
+  const data = await fetchGraphQL(query, { search: searchName });
+  return data?.Media;
+}
+
+// Optimized: Batch fetch multiple anime details in one request
+export async function fetchMultipleAnimeDetails(animeIds) {
+  if (!animeIds || animeIds.length === 0) return [];
+  
+  // AniList has a limit of 50 items per query
+  const batchSize = 50;
+  const results = [];
+  
+  for (let i = 0; i < animeIds.length; i += batchSize) {
+    const batch = animeIds.slice(i, i + batchSize);
+    const query = `
+      query ($ids: [Int]) {
+        Page(perPage: ${batchSize}) {
+          media(id_in: $ids, type: ANIME) {
+            id
+            title {
+              romaji
+              english
+              native
+            }
+            coverImage {
+              extraLarge
+            }
+            episodes
+            siteUrl
+            genres
+            nextAiringEpisode {
+              episode
+              airingAt
+            }
+            airingSchedule(notYetAired: false, perPage: 50) {
+              nodes {
+                episode
+                airingAt
+              }
+            }
+          }
+        }
+      }
+    `;
+    
+    const data = await fetchGraphQL(query, { ids: batch });
+    if (data?.Page?.media) {
+      results.push(...data.Page.media);
+    }
+  }
+  
+  return results;
+}
+
+// Optimized: Fetch airing schedules with anime details in one request
+export async function fetchAiringSchedulesWithDetails(ids) {
+  if (!ids || ids.length === 0) return [];
+  
+  const query = `
+    query ($ids: [Int]) {
+      Page(perPage: 50) {
+        airingSchedules(mediaId_in: $ids, notYetAired: true, sort: TIME) {
+          airingAt
+          episode
+          media {
+            id
+            title {
+              romaji
+              english
+            }
+            coverImage {
+              extraLarge
+            }
+            siteUrl
+            genres
+            episodes
+            nextAiringEpisode {
+              episode
+              airingAt
+            }
+            airingSchedule(notYetAired: false, perPage: 50) {
+              nodes {
+                episode
+                airingAt
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  
+  const data = await fetchGraphQL(query, { ids });
+  return data.Page.airingSchedules || [];
+}

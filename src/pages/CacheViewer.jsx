@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   fetchFullAiringSchedule,
 } from "../utils/anilistApi";
+import {
+  getCacheStats,
+  clearAllCaches,
+} from "../utils/cacheUtils";
 
 export default function CacheViewer() {
   const navigate = useNavigate();
@@ -15,6 +19,12 @@ export default function CacheViewer() {
   );
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cacheStats, setCacheStats] = useState({ scheduleCache: 0, detailsCache: 0, upcomingCache: 0, total: 0 });
+
+  // Load cache stats on mount
+  useEffect(() => {
+    setCacheStats(getCacheStats());
+  }, []);
 
   function deleteAnime(id) {
     const newWatchingList = watchingList.filter((a) => a.id !== id);
@@ -35,8 +45,10 @@ export default function CacheViewer() {
   function deleteAll() {
     localStorage.removeItem("watchingList");
     localStorage.removeItem("calendarList");
+    clearAllCaches(); // Clear all API caches
     setWatchingList([]);
     setCalendarList([]);
+    setCacheStats({ scheduleCache: 0, detailsCache: 0, upcomingCache: 0, total: 0 });
     setShowConfirm(false);
   }
 
@@ -160,6 +172,23 @@ export default function CacheViewer() {
         <h2 style={{ color: "#61dafb", margin: "0 auto", flexGrow: 1, textAlign: "center" }}>
           📦 Local Cache Viewer
         </h2>
+
+        {/* Cache Stats */}
+        <div style={{ 
+          display: "flex", 
+          gap: 15, 
+          alignItems: "center", 
+          backgroundColor: "#1e1e1e", 
+          padding: "8px 12px", 
+          borderRadius: 8,
+          fontSize: 12,
+          color: "#aaa"
+        }}>
+          <span>📊 Schedule: {cacheStats.scheduleCache}</span>
+          <span>🎬 Details: {cacheStats.detailsCache}</span>
+          <span>⏰ Upcoming: {cacheStats.upcomingCache}</span>
+          <span>📦 Total: {cacheStats.total}</span>
+        </div>
 
         <button
           onClick={cacheAllEpisodes}
