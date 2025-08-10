@@ -255,10 +255,65 @@ export default function MainPage() {
     fetchScheduleForNewAnime();
   }, [watchingList]);
 
-  // Add anime by name
-  async function addAnime(animeName = null) {
+  // Add anime by name from input field
+  async function addAnime() {
     setError("");
-    const searchName = (animeName || addName).trim();
+    const searchName = String(addName || "").trim();
+    if (!searchName) return;
+
+    try {
+      const newAnime = await fetchAnimeByName(searchName);
+
+      if (!newAnime) {
+        setError("Anime not found on AniList");
+        return;
+      }
+
+      if (watchingList.some((a) => a.id === newAnime.id)) {
+        setShowDuplicatePopup(true);
+        setTimeout(() => setShowDuplicatePopup(false), 3000);
+        return;
+      }
+
+      const detailedAnime = await fetchAnimeWithSchedules(newAnime.id);
+      if (!detailedAnime) {
+        setError("Error fetching detailed anime info. Please try again.");
+        return;
+      }
+
+      const updatedAnime = {
+        id: detailedAnime.id,
+        title: detailedAnime.title,
+        coverImage: detailedAnime.coverImage,
+        episodes: detailedAnime.episodes || 0,
+        siteUrl: newAnime.siteUrl,
+        genres: newAnime.genres || [],
+        cachedEpisodes: 0,
+        isFavorite: false,
+        watchedUntil: 0,
+        fullAiringSchedule: detailedAnime.airingSchedule?.nodes || [],
+        nextAiringEpisode: detailedAnime.nextAiringEpisode || null,
+      };
+
+      const updatedList = [...watchingList, updatedAnime];
+      setWatchingList(updatedList);
+      saveWatchingList(updatedList);
+
+      if (user) {
+        await saveFirestoreWatchingList(user.uid, updatedList);
+      }
+
+      setAddName("");
+    } catch (err) {
+      setError("Error fetching anime");
+      console.error("Error in addAnime:", err);
+    }
+  }
+
+  // Add anime from upcoming anime list (already knows the anime name)
+  async function addAnimeFromUpcoming(animeName) {
+    setError("");
+    const searchName = String(animeName || "").trim();
     if (!searchName) return;
 
     try {
@@ -609,11 +664,11 @@ export default function MainPage() {
 
       <NewRelease watchingList={watchingList} />
 
-      <UpcomingAnimeVertical 
-        episodes={episodes} 
-        watchingList={watchingList}
-        onAddAnime={addAnime}
-      />
+             <UpcomingAnimeVertical 
+         episodes={episodes} 
+         watchingList={watchingList}
+         onAddAnime={addAnimeFromUpcoming}
+       />
     </div>
   );
 }
