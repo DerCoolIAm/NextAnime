@@ -6,13 +6,14 @@ export default function SavedAnimeCard({
   onToggleFavorite,
   onToggleCalendar,
   calendarList,
+  isCompleted,
 }) {
   const [countdown, setCountdown] = useState("");
   const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Update countdown timer every second
+  // Update countdown timer every second (only for non-completed anime)
   useEffect(() => {
-    if (!anime.airingAt) {
+    if (isCompleted || !anime.airingAt) {
       setCountdown("");
       return;
     }
@@ -44,11 +45,11 @@ export default function SavedAnimeCard({
     updateCountdown();
     const timer = setInterval(updateCountdown, 1000);
     return () => clearInterval(timer);
-  }, [anime.airingAt]);
+  }, [anime.airingAt, isCompleted]);
 
-  // Auto-refresh view after episode airs
+  // Auto-refresh view after episode airs (only for non-completed anime)
   useEffect(() => {
-    if (!anime.airingAt) return;
+    if (isCompleted || !anime.airingAt) return;
 
     const now = Date.now();
     const airingTime = anime.airingAt * 1000;
@@ -61,10 +62,12 @@ export default function SavedAnimeCard({
 
       return () => clearTimeout(timeout);
     }
-  }, [anime.airingAt]);
+  }, [anime.airingAt, isCompleted]);
 
-  const isAiring = anime.episode !== null && anime.airingAt !== null;
-  const airingText = isAiring
+  const isAiring = !isCompleted && anime.episode !== null && anime.airingAt !== null;
+  const airingText = isCompleted
+    ? "✅ Completed"
+    : isAiring
     ? `Ep ${anime.episode} - ${countdown}`
     : "Finished airing";
 
@@ -74,10 +77,10 @@ export default function SavedAnimeCard({
     <div
       style={{
         position: "relative",
-        width: 180,
-        minWidth: 180,
-        height: 440,
-        borderRadius: 12,
+        width: "clamp(160px, 25vw, 200px)",
+        minWidth: "clamp(160px, 25vw, 200px)",
+        height: "clamp(380px, 60vw, 460px)",
+        borderRadius: "clamp(8px, 1.5vw, 12px)",
         overflow: "hidden",
         backgroundColor: anime.favorited ? "#2a2a2a" : "#1e1e1e",
         border: anime.favorited ? "2px solid #61dafb" : "none",
@@ -89,6 +92,19 @@ export default function SavedAnimeCard({
         color: "#eee",
         userSelect: "none",
         boxShadow: anime.favorited ? "0 0 15px rgba(97, 218, 251, 0.3)" : "none",
+        transition: "all 0.3s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-5px)";
+        e.currentTarget.style.boxShadow = anime.favorited 
+          ? "0 8px 25px rgba(97, 218, 251, 0.4)" 
+          : "0 8px 25px rgba(0,0,0,0.3)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = anime.favorited 
+          ? "0 0 15px rgba(97, 218, 251, 0.3)" 
+          : "none";
       }}
     >
       <img
@@ -110,7 +126,7 @@ export default function SavedAnimeCard({
           <h4
             style={{
               margin: 0,
-              fontSize: 14,
+              fontSize: "clamp(12px, 2.5vw, 14px)",
               lineHeight: "1.2em",
               height: "2.4em",
               overflow: "hidden",
@@ -125,7 +141,11 @@ export default function SavedAnimeCard({
             {anime.title.english || anime.title.romaji}
           </h4>
 
-          <p style={{ fontSize: 12, color: "#ccc", marginTop: 4 }}>
+          <p style={{ 
+            fontSize: "clamp(10px, 2vw, 12px)", 
+            color: "#ccc", 
+            marginTop: 4 
+          }}>
             {airingText}
           </p>
         </div>
@@ -146,16 +166,23 @@ export default function SavedAnimeCard({
                 backgroundColor: "#61dafb",
                 border: "none",
                 borderRadius: "50%",
-                width: 28,
-                height: 28,
+                width: "clamp(24px, 4vw, 32px)",
+                height: "clamp(24px, 4vw, 32px)",
                 cursor: "pointer",
-                fontSize: 18,
+                fontSize: "clamp(14px, 3vw, 18px)",
                 lineHeight: 1,
+                transition: "all 0.3s ease",
               }}
               aria-label={
                 anime.favorited ? "Unfavorite anime" : "Favorite anime"
               }
               title={anime.favorited ? "Unfavorite" : "Favorite"}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
             >
               {anime.favorited ? "★" : "☆"}
             </button>
@@ -165,16 +192,23 @@ export default function SavedAnimeCard({
                 backgroundColor: "#e55353",
                 border: "none",
                 borderRadius: "50%",
-                width: 28,
-                height: 28,
+                width: "clamp(24px, 4vw, 32px)",
+                height: "clamp(24px, 4vw, 32px)",
                 cursor: "pointer",
                 color: "white",
                 fontWeight: "bold",
-                fontSize: 20,
+                fontSize: "clamp(16px, 3vw, 20px)",
                 lineHeight: 1,
+                transition: "all 0.3s ease",
               }}
               aria-label="Delete anime"
               title="Delete"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
             >
               ×
             </button>
@@ -185,9 +219,9 @@ export default function SavedAnimeCard({
               onClick={() => onToggleCalendar(anime)}
               style={{
                 marginTop: 4,
-                fontSize: 12,
-                padding: "6px 10px",
-                borderRadius: 6,
+                fontSize: "clamp(10px, 2vw, 12px)",
+                padding: "clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px)",
+                borderRadius: "clamp(4px, 1vw, 6px)",
                 border: "none",
                 backgroundColor: isInCalendar ? "#28a745" : "#007acc",
                 color: "white",
@@ -195,10 +229,16 @@ export default function SavedAnimeCard({
                 width: "100%",
                 fontWeight: "700",
                 userSelect: "none",
-                transition: "background-color 0.3s",
+                transition: "all 0.3s ease",
               }}
               aria-pressed={isInCalendar}
               title={isInCalendar ? "Remove from calendar" : "Add to calendar"}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.02)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
             >
               {isInCalendar ? "Added ✓" : "Add to calendar"}
             </button>

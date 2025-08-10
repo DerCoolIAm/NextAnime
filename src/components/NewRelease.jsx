@@ -38,6 +38,9 @@ export default function NewRelease({ watchingList }) {
       let newReleasesFound = false;
 
       for (const anime of listToCheck) {
+        // Skip completed anime
+        if (anime.status === "FINISHED") continue;
+        
         if (!anime.nextAiringEpisode) continue;
 
         const ep = anime.nextAiringEpisode.episode;

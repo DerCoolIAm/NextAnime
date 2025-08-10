@@ -7,6 +7,7 @@ export default function SavedAnimeHorizontal({
   onToggleFavorite,
   calendarList,
   onToggleCalendar,
+  isCompleted,
 }) {
   if (watchingList.length === 0) return null;
 
@@ -14,6 +15,11 @@ export default function SavedAnimeHorizontal({
 
   // One-time fix: Replace outdated airingAt/episode with next upcoming
   const adjustedList = watchingList.map((anime) => {
+    // Skip adjustment for completed anime
+    if (anime.status === "FINISHED") {
+      return anime;
+    }
+
     if (
       anime.airingAt &&
       anime.airingAt < now &&
@@ -39,12 +45,13 @@ export default function SavedAnimeHorizontal({
       style={{
         display: "flex",
         overflowX: "auto",
-        gap: 16,
-        paddingBottom: 10,
-        marginBottom: 40,
-        maxWidth: 1200,
-        paddingLeft: 20,
-        paddingRight: 20,
+        gap: "clamp(12px, 2vw, 20px)",
+        padding: "clamp(10px, 2vw, 20px)",
+        marginBottom: "clamp(20px, 4vw, 40px)",
+        maxWidth: "100%",
+        scrollbarWidth: "thin",
+        scrollbarColor: "#61dafb transparent",
+        WebkitOverflowScrolling: "touch",
       }}
     >
       {adjustedList.map((anime) => (
@@ -55,6 +62,7 @@ export default function SavedAnimeHorizontal({
           onToggleFavorite={onToggleFavorite}
           onToggleCalendar={onToggleCalendar}
           calendarList={calendarList}
+          isCompleted={isCompleted(anime)}
         />
       ))}
     </div>

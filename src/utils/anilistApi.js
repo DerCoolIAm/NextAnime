@@ -170,6 +170,7 @@ export async function fetchAnimeWithSchedules(animeId) {
           extraLarge
         }
         episodes
+        status
         nextAiringEpisode {
           episode
           airingAt
@@ -192,7 +193,7 @@ export async function fetchAnimeWithSchedules(animeId) {
 export async function fetchAnimeByNameWithDetails(searchName) {
   const query = `
     query ($search: String) {
-      Media(search: $search, type: ANIME, status: RELEASING) {
+      Media(search: $search, type: ANIME) {
         id
         title {
           romaji
@@ -203,6 +204,7 @@ export async function fetchAnimeByNameWithDetails(searchName) {
           extraLarge
         }
         episodes
+        status
         siteUrl
         genres
         nextAiringEpisode {
@@ -295,6 +297,7 @@ export async function fetchAiringSchedulesWithDetails(ids) {
             siteUrl
             genres
             episodes
+            status
             nextAiringEpisode {
               episode
               airingAt
