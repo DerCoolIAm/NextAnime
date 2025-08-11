@@ -135,20 +135,33 @@ export default function UserPage() {
   return (
     <div
       style={{
-        maxWidth: 900,
-        margin: "40px auto",
+        width: "100%",
+        maxWidth: 1100,
+        margin: "20px auto",
         color: "#eee",
         backgroundColor: "#121212",
         borderRadius: 12,
         boxShadow: "0 0 20px rgba(0,0,0,0.7)",
         display: "flex",
-        gap: 30,
-        padding: 20,
-        minHeight: "80vh",
+        gap: 24,
+        padding: 16,
+        minHeight: "70vh",
       }}
+      className="user-container"
     >
+      <style>{`
+        @media (max-width: 1024px) {
+          .user-container { flex-direction: column; gap: 16px; }
+          .user-sidebar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+          .user-back-btn { position: static !important; align-self: flex-end; margin-bottom: 8px; }
+        }
+        @media (max-width: 600px) {
+          .user-sidebar { grid-template-columns: 1fr; }
+          .anime-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+      `}</style>
       {/* Sidebar Tabs */}
-      <div style={{ flex: "0 0 180px" }}>
+      <div style={{ flex: "0 0 180px" }} className="user-sidebar">
         <button style={tabButtonStyle("personal")} onClick={() => setActiveTab("personal")}>
           Personal Information
         </button>
@@ -168,9 +181,6 @@ export default function UserPage() {
         <button
           onClick={() => navigate("/")}
           style={{
-            position: "fixed",
-            top: 10,
-            right: 10,
             backgroundColor: "#61dafb",
             border: "none",
             borderRadius: 6,
@@ -179,6 +189,7 @@ export default function UserPage() {
             fontWeight: "700",
             color: "#000",
           }}
+          className="user-back-btn"
         >
           ← Back to Main
         </button>
@@ -197,13 +208,13 @@ export default function UserPage() {
             {watchingList.length === 0 ? (
               <p>You haven't added any anime yet.</p>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 20 }}>
+              <div className="anime-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 16 }}>
                 {watchingList.map((anime) => (
                   <div key={anime.id} style={{ backgroundColor: "#282828", borderRadius: 12, overflow: "hidden" }}>
                     <img
                       src={anime.coverImage?.extraLarge || anime.coverImage}
                       alt={anime.title?.english || anime.title?.romaji || anime.title}
-                      style={{ width: "100%", height: 280, objectFit: "cover" }}
+                      style={{ width: "100%", height: 240, objectFit: "cover" }}
                     />
                     <div style={{ padding: 12, fontWeight: "700" }}>
                       {anime.title?.english || anime.title?.romaji || anime.title}
@@ -226,13 +237,13 @@ export default function UserPage() {
             {missingFromCloud.length === 0 ? (
               <p>All your local anime are already saved in the cloud.</p>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 20 }}>
+              <div className="anime-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 16 }}>
                 {missingFromCloud.map((anime) => (
                   <div key={anime.id} style={{ backgroundColor: "#282828", borderRadius: 12, overflow: "hidden" }}>
                     <img
                       src={anime.coverImage?.extraLarge || anime.coverImage}
                       alt={anime.title?.english || anime.title?.romaji || anime.title}
-                      style={{ width: "100%", height: 280, objectFit: "cover" }}
+                      style={{ width: "100%", height: 240, objectFit: "cover" }}
                     />
                     <div style={{ padding: 12, fontWeight: "700" }}>
                       {anime.title?.english || anime.title?.romaji || anime.title}
