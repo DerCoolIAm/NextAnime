@@ -5,6 +5,7 @@ import { searchAnimeByName } from "../utils/anilistApi";
 export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [suppressSuggestions, setSuppressSuggestions] = useState(false);
   const containerRef = useRef();
 
   useEffect(() => {
@@ -20,6 +21,14 @@ export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
   useEffect(() => {
     if (!value.trim()) {
       setSuggestions([]);
+      setShowDropdown(false);
+      // If input is cleared (e.g., after adding anime), allow suggestions again on next typing
+      setSuppressSuggestions(false);
+      return;
+    }
+
+    if (suppressSuggestions) {
+      // Do not fetch or show suggestions while suppressed
       return;
     }
 
@@ -34,7 +43,7 @@ export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [value]);
+  }, [value, suppressSuggestions]);
 
   return (
     <div
@@ -49,7 +58,11 @@ export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
       <input
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          // User typed: re-enable suggestions
+          setSuppressSuggestions(false);
+          onChange(e.target.value);
+        }}
         placeholder="e.g. Attack on Titan"
         style={{
           padding: "8px 12px",
@@ -60,16 +73,16 @@ export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
           backgroundColor: "#1e1e1e",
           color: "#eee",
         }}
-        onFocus={() => value.trim() && setShowDropdown(true)}
+        onFocus={() => {
+          if (!suppressSuggestions && value.trim()) {
+            setShowDropdown(true);
+          }
+        }}
       />
       {showDropdown && suggestions.length > 0 && (
         <ul
           style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            width: "108%",
+            width: "100%",
             backgroundColor: "#222",
             color: "#eee",
             borderRadius: "0 0 6px 6px",
@@ -77,10 +90,10 @@ export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
             listStyle: "none",
             margin: 0,
             padding: 0,
-            zIndex: 999,
             maxHeight: 200,
             overflowY: "auto",
             scrollbarWidth: "none",
+            marginTop: 6,
           }}
           className="autocomplete-dropdown"
         >
@@ -90,6 +103,8 @@ export default function AnimeSearchAutocomplete({ value, onChange, onSelect }) {
               onClick={() => {
                 const name = anime.title.english || anime.title.romaji;
                 onSelect(name);
+                // After selecting, suppress further suggestions until user types or input is cleared
+                setSuppressSuggestions(true);
                 setShowDropdown(false);
               }}
               style={{

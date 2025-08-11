@@ -123,7 +123,7 @@ export default function MainPage() {
   const [addName, setAddName] = useState("");
   const [showDuplicatePopup, setShowDuplicatePopup] = useState(false);
   const navigate = useNavigate();
-  const VERSION = "Beta v2.0.1";
+  const VERSION = "Beta v2.0.2";
 
   const [user, setUser] = useState(null);
   const prevWatchingListIds = useRef(new Set());
@@ -504,6 +504,28 @@ export default function MainPage() {
               padding: 8px !important;
             }
           }
+
+          /* Add Anime controls responsive layout */
+          .add-section-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+          }
+          .autocomplete-wrap {
+            width: 100%;
+            max-width: 500px;
+          }
+          @media (max-width: 992px) {
+            .add-section-controls {
+              flex-direction: column;
+              align-items: stretch;
+            }
+            .add-section-controls .add-button {
+              width: 100%;
+            }
+          }
           
           /* Custom scrollbar styling */
           .anime-scroll-container::-webkit-scrollbar {
@@ -780,19 +802,8 @@ export default function MainPage() {
               Your watching list — Add any anime by name:
             </p>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: "clamp(10px, 2vw, 15px)",
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ 
-                width: "clamp(250px, 40vw, 400px)",
-                minWidth: "250px"
-              }}>
+            <div className="add-section-controls">
+              <div className="autocomplete-wrap">
                 <AnimeSearchAutocomplete
                   value={addName}
                   onChange={setAddName}
@@ -802,8 +813,6 @@ export default function MainPage() {
               <button
                 onClick={addAnime}
                 style={{
-                  position: "fixed",
-                  right: "320px",
                   padding: "clamp(10px, 2vw, 15px) clamp(16px, 3vw, 24px)",
                   background: "linear-gradient(135deg, #61dafb, #6dd6ff)",
                   color: "#000",
@@ -815,6 +824,7 @@ export default function MainPage() {
                   transition: "all 0.3s ease",
                   boxShadow: "0 4px 15px rgba(97, 218, 251, 0.3)",
                 }}
+                className="add-button"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
                   e.currentTarget.style.boxShadow = "0 6px 20px rgba(97, 218, 251, 0.4)";
