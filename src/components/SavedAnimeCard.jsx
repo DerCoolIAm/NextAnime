@@ -7,6 +7,7 @@ export default function SavedAnimeCard({
   onToggleCalendar,
   calendarList,
   isCompleted,
+  onClickEdit,
 }) {
   const [countdown, setCountdown] = useState("");
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -106,6 +107,7 @@ export default function SavedAnimeCard({
           ? "0 0 15px rgba(97, 218, 251, 0.3)" 
           : "none";
       }}
+      onClick={() => onClickEdit && onClickEdit(anime)}
     >
       <img
         src={anime.coverImage.extraLarge}
@@ -161,7 +163,7 @@ export default function SavedAnimeCard({
             }}
           >
             <button
-              onClick={() => onToggleFavorite(anime.id)}
+              onClick={(e) => { e.stopPropagation(); onToggleFavorite(anime.id); }}
               style={{
                 backgroundColor: "#61dafb",
                 border: "none",
@@ -187,7 +189,7 @@ export default function SavedAnimeCard({
               {anime.favorited ? "★" : "☆"}
             </button>
             <button
-              onClick={() => onDelete(anime.id)}
+              onClick={(e) => { e.stopPropagation(); onDelete(anime.id); }}
               style={{
                 backgroundColor: "#e55353",
                 border: "none",
@@ -216,7 +218,7 @@ export default function SavedAnimeCard({
 
           {isAiring && (
             <button
-              onClick={() => onToggleCalendar(anime)}
+              onClick={(e) => { e.stopPropagation(); onToggleCalendar(anime); }}
               style={{
                 marginTop: 4,
                 fontSize: "clamp(10px, 2vw, 12px)",

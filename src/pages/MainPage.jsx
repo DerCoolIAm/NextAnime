@@ -15,6 +15,7 @@ import SavedAnimeHorizontal from "../components/SavedAnimeHorizontal";
 import UpcomingAnimeVertical from "../components/UpcomingAnimeVertical";
 import AnimeSearchAutocomplete from "../components/AnimeSearchAutocomplete";
 import NewRelease from "../components/NewRelease";
+import AnimeEditModal from "../components/AnimeEditModal";
 import appLogo from "../assets/logo.png";
 import {
   loadWatchingList,
@@ -122,8 +123,9 @@ export default function MainPage() {
   const [error, setError] = useState("");
   const [addName, setAddName] = useState("");
   const [showDuplicatePopup, setShowDuplicatePopup] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
   const navigate = useNavigate();
-  const VERSION = "Beta v2.0.3";
+  const VERSION = "Beta v2.0.4";
 
   const [user, setUser] = useState(null);
   const prevWatchingListIds = useRef(new Set());
@@ -418,6 +420,95 @@ export default function MainPage() {
     const filteredCalendar = calendarList.filter((a) => a.id !== id);
     setCalendarList(filteredCalendar);
     saveCalendarList(filteredCalendar);
+  }
+
+  // Open/close edit modal
+  function handleOpenEdit(anime) {
+    setEditTarget(anime);
+  }
+  function handleCloseEdit() {
+    setEditTarget(null);
+  }
+
+  // Adjust release time helpers
+  function applyUpdateAndPersist(updatedList) {
+    setWatchingList(updatedList);
+    saveWatchingList(updatedList);
+    if (user) {
+      saveFirestoreWatchingList(user.uid, updatedList);
+    }
+    // Also update calendar with adjusted times
+    setCalendarList((prev) => {
+      const updatedCalendar = prev.map((ep) => {
+        const src = updatedList.find((a) => a.id === ep.id);
+        if (!src) return ep;
+        return {
+          ...ep,
+          airingAt: src.fullAiringSchedule?.find((n) => n.episode === ep.episode)?.airingAt || ep.airingAt,
+          title: src.title,
+          coverImage: src.coverImage,
+          favorited: src.favorited || false,
+        };
+      });
+      saveCalendarList(updatedCalendar);
+      return updatedCalendar;
+    });
+  }
+
+  function withAdjustedSchedule(anime, newFirstTs) {
+    // Compute delta between desired first upcoming ts and current first upcoming ts
+    const now = Date.now() / 1000;
+    let nextNode = null;
+    if (anime.fullAiringSchedule?.length) {
+      nextNode = anime.fullAiringSchedule.find((n) => n.airingAt > now) || anime.fullAiringSchedule[0];
+    }
+    const currentRefTs = nextNode ? nextNode.airingAt : anime.airingAt || newFirstTs;
+    const delta = newFirstTs - currentRefTs;
+
+    const shift = (ts) => (typeof ts === "number" ? ts + delta : ts);
+
+    const adjustedSchedule = (anime.fullAiringSchedule || []).map((n) => ({
+      ...n,
+      airingAt: shift(n.airingAt),
+    }));
+
+    const adjustedAiringAt = shift(anime.airingAt);
+
+    return {
+      ...anime,
+      airingAt: adjustedAiringAt,
+      fullAiringSchedule: adjustedSchedule,
+      userTimeOffsetSeconds: (anime.userTimeOffsetSeconds || 0) + delta,
+      originalAiringAt: anime.originalAiringAt ?? (anime.airingAt ?? null),
+      originalFullAiringSchedule: anime.originalFullAiringSchedule ?? (anime.fullAiringSchedule || []),
+    };
+  }
+
+  function handleSaveReleaseTimestamp(id, newTsSeconds) {
+    const updated = watchingList.map((a) => (a.id === id ? withAdjustedSchedule(a, newTsSeconds) : a));
+    applyUpdateAndPersist(updated);
+  }
+
+  function handleAdjustOffsetSeconds(id, offsetSeconds) {
+    const target = watchingList.find((a) => a.id === id);
+    if (!target) return;
+    const newTs = (target.airingAt || Math.floor(Date.now() / 1000)) + offsetSeconds;
+    handleSaveReleaseTimestamp(id, newTs);
+  }
+
+  function handleResetReleaseTime(id) {
+    const updated = watchingList.map((a) => {
+      if (a.id !== id) return a;
+      const baseSchedule = a.originalFullAiringSchedule || a.fullAiringSchedule || [];
+      const baseAiring = a.originalAiringAt ?? a.airingAt;
+      return {
+        ...a,
+        fullAiringSchedule: baseSchedule,
+        airingAt: baseAiring,
+        userTimeOffsetSeconds: 0,
+      };
+    });
+    applyUpdateAndPersist(updated);
   }
 
   function toggleFavorite(id) {
@@ -871,6 +962,7 @@ export default function MainPage() {
               calendarList={calendarList}
               onToggleCalendar={handleToggleCalendar}
               isCompleted={isAnimeCompleted}
+              onClickEdit={handleOpenEdit}
             />
           </div>
 
@@ -885,6 +977,20 @@ export default function MainPage() {
         </div>
 
         <NewRelease watchingList={watchingList} />
+
+        {/* Edit Modal */}
+        <AnimeEditModal
+          anime={editTarget}
+          isOpen={!!editTarget}
+          onClose={handleCloseEdit}
+          onSaveReleaseTimestamp={handleSaveReleaseTimestamp}
+          onAdjustOffsetSeconds={handleAdjustOffsetSeconds}
+          onResetReleaseTime={handleResetReleaseTime}
+          onToggleFavorite={toggleFavorite}
+          onDelete={deleteAnime}
+          onToggleCalendar={handleToggleCalendar}
+          isInCalendar={editTarget ? calendarList.some((a) => a.id === editTarget.id) : false}
+        />
       </div>
     </div>
   );

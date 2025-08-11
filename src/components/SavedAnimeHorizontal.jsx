@@ -8,6 +8,7 @@ export default function SavedAnimeHorizontal({
   calendarList,
   onToggleCalendar,
   isCompleted,
+  onClickEdit,
 }) {
   if (watchingList.length === 0) return null;
 
@@ -63,6 +64,7 @@ export default function SavedAnimeHorizontal({
           onToggleCalendar={onToggleCalendar}
           calendarList={calendarList}
           isCompleted={isCompleted(anime)}
+          onClickEdit={onClickEdit}
         />
       ))}
     </div>
