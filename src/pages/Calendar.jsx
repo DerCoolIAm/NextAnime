@@ -50,10 +50,8 @@ export default function Calendar() {
   }, [calendarList]);
 
   useEffect(() => {
-    document.body.style.overflowY = 'hidden';
-    return () => {
-      document.body.style.overflowY = '';
-    };
+    // Allow normal page scrolling, especially on mobile/tablet
+    return () => {};
   }, []);
 
   // Filter calendarList based on showAll toggle
@@ -161,20 +159,28 @@ export default function Calendar() {
   return (
     <div
       style={{
-        width: 1400,
-        margin: "40px auto",
+        width: "100%",
+        maxWidth: 1400,
+        margin: "20px auto",
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
         color: "#eee",
-        padding: "20px",
+        padding: "16px",
         paddingBottom: "10px",
         backgroundColor: "#121212",
         borderRadius: 12,
         boxShadow: "0 0 20px rgba(0,0,0,0.7)",
-        minHeight: "80vh",
-        overflowX: "auto",
-        overflowY: "hidden",
+        minHeight: "60vh",
       }}
     >
+      <style>{`
+        @media (max-width: 1024px) {
+          .calendar-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+          }
+        }
+      `}</style>
       <header
         style={{
           display: "flex",
@@ -182,6 +188,7 @@ export default function Calendar() {
           alignItems: "center",
           marginBottom: 20,
         }}
+        className="calendar-header"
       >
         <div>
           <h2 style={{ fontWeight: "700", fontSize: "1.6rem", margin: 0 }}>
@@ -269,6 +276,7 @@ export default function Calendar() {
         style={{
           overflowX: "auto",
           overflowY: "hidden",
+          WebkitOverflowScrolling: "touch",
         }}
       >
         <WeekView

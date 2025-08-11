@@ -1,7 +1,7 @@
 import React from "react";
 import CalendarAnimeCard from "./CalendarAnimeCard";
 
-export default function DayColumn({ date, animes, onRemove }) {
+export default function DayColumn({ date, animes, onRemove, isGrid }) {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const dayName = dayNames[date.getDay()];
   const dayNum = date.getDate();
@@ -16,15 +16,15 @@ export default function DayColumn({ date, animes, onRemove }) {
   return (
     <div
       style={{
-        flex: "0 0 160px",
-        maxWidth: 160,
+        flex: isGrid ? "0 1 auto" : "0 0 140px",
+        maxWidth: isGrid ? "unset" : 140,
         backgroundColor: isToday ? "#2d4a3e" : "#282828",
         borderRadius: 12,
-        padding: 12,
+        padding: 10,
         color: "#eee",
         display: "flex",
         flexDirection: "column",
-        maxHeight: "100%",
+        maxHeight: isGrid ? "unset" : "100%",
         border: isToday ? "2px solid #61dafb" : "none",
         boxShadow: isToday ? "0 0 10px rgba(97, 218, 251, 0.3)" : "none",
       }}
@@ -65,7 +65,6 @@ export default function DayColumn({ date, animes, onRemove }) {
           style={{
             flexGrow: 1,
             paddingRight: 6,
-            scrollbarWidth: "thin",
             scrollbarColor: "#61dafb transparent",
             display: "flex",
             flexDirection: "column",
@@ -73,7 +72,7 @@ export default function DayColumn({ date, animes, onRemove }) {
             overflowY: "auto",
             scrollbarWidth: "none", // hide scrollbar in Firefox
             msOverflowStyle: "none", // hide scrollbar IE/Edge
-            maxHeight: "calc(100vh - 250px)",
+            maxHeight: isGrid ? "unset" : "60vh",
           }}
           className="anime-list-scroll"
         >

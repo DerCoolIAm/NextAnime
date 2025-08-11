@@ -123,7 +123,7 @@ export default function MainPage() {
   const [addName, setAddName] = useState("");
   const [showDuplicatePopup, setShowDuplicatePopup] = useState(false);
   const navigate = useNavigate();
-  const VERSION = "Beta v2.0.2";
+  const VERSION = "Beta v2.0.3";
 
   const [user, setUser] = useState(null);
   const prevWatchingListIds = useRef(new Set());

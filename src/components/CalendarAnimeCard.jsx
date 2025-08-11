@@ -83,8 +83,8 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
           className="anime-image-container"
           style={{
             position: "relative",
-            width: 40,
-            height: 60,
+            width: 36,
+            height: 54,
             flexShrink: 0,
             borderRadius: 6,
             overflow: "hidden",
@@ -118,7 +118,7 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
         <div
           style={{
             fontWeight: "700",
-            fontSize: 14,
+            fontSize: 13,
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
@@ -156,7 +156,7 @@ export default function CalendarAnimeCard({ anime, onRemove }) {
           <div
             style={{
               minWidth: 0,
-              maxWidth: "70%",
+              maxWidth: "65%",
               overflow: "hidden",
               whiteSpace: "nowrap",
               textOverflow: "ellipsis",
