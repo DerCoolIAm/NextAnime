@@ -15,6 +15,7 @@ import SavedAnimeHorizontal from "../components/SavedAnimeHorizontal";
 import UpcomingAnimeVertical from "../components/UpcomingAnimeVertical";
 import AnimeSearchAutocomplete from "../components/AnimeSearchAutocomplete";
 import NewRelease from "../components/NewRelease";
+import appLogo from "../assets/logo.png";
 import {
   loadWatchingList,
   saveWatchingList,
@@ -735,22 +736,30 @@ export default function MainPage() {
 
         {/* Main Content */}
         <div style={{ display: "flex", flexDirection: "column", gap: "clamp(25px, 5vw, 40px)" }}>
-          {/* Page Title */}
-          <h1
+          {/* Page Title / Logo */}
+          <div
             style={{
-              textAlign: "center",
-              margin: 0,
-              background: "linear-gradient(135deg, #61dafb, #6dd6ff)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              fontSize: "clamp(24px, 5vw, 36px)",
-              fontWeight: 800,
-              textShadow: "0 2px 10px rgba(97, 218, 251, 0.3)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "64px",
+              overflow: "visible",
             }}
           >
-            📺 Anime Tracker
-          </h1>
+            <img
+              src={appLogo}
+              alt="App logo"
+              style={{
+                height: "250px",
+                width: "auto",
+                transform: "scale(2.2)",
+                transformOrigin: "center center",
+                filter: "drop-shadow(0 2px 10px rgba(97, 218, 251, 0.3))",
+                userSelect: "none",
+                pointerEvents: "none",
+              }}
+            />
+          </div>
 
           {/* Add Anime Section */}
           <div
