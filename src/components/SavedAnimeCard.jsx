@@ -11,6 +11,7 @@ export default function SavedAnimeCard({
 }) {
   const [countdown, setCountdown] = useState("");
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [clickTimer, setClickTimer] = useState(null);
 
   // Update countdown timer every second (only for non-completed anime)
   useEffect(() => {
@@ -74,6 +75,32 @@ export default function SavedAnimeCard({
 
   const isInCalendar = calendarList.some((a) => a.id === anime.id);
 
+  const handleDoubleClick = () => {
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+      setClickTimer(null);
+    }
+    
+    if (anime.siteUrl) {
+      window.open(anime.siteUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleClick = () => {
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+    }
+    
+    const timer = setTimeout(() => {
+      if (onClickEdit) {
+        onClickEdit(anime);
+      }
+      setClickTimer(null);
+    }, 250);
+    
+    setClickTimer(timer);
+  };
+
   return (
     <div
       style={{
@@ -94,6 +121,7 @@ export default function SavedAnimeCard({
         userSelect: "none",
         boxShadow: anime.favorited ? "0 0 15px rgba(97, 218, 251, 0.3)" : "none",
         transition: "all 0.3s ease",
+        cursor: "pointer",
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = "translateY(-5px)";
@@ -107,7 +135,9 @@ export default function SavedAnimeCard({
           ? "0 0 15px rgba(97, 218, 251, 0.3)" 
           : "none";
       }}
-      onClick={() => onClickEdit && onClickEdit(anime)}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      title="Single click to edit • Double click to visit anime page"
     >
       <img
         src={anime.coverImage.extraLarge}

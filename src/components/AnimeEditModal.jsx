@@ -11,6 +11,7 @@ export default function AnimeEditModal({
   onDelete,
   onToggleCalendar,
   isInCalendar,
+  setAnimeList,
 }) {
   if (!isOpen || !anime) return null;
 
@@ -29,10 +30,15 @@ export default function AnimeEditModal({
   }, [currentAdjustedTs]);
 
   const [manualTime, setManualTime] = useState(displayIso);
+  const [manualLink, setManualLink] = useState(anime.siteUrl || "");
 
   React.useEffect(() => {
     setManualTime(displayIso);
   }, [displayIso]);
+
+  React.useEffect(() => {
+    setManualLink(anime.siteUrl || "");
+  }, [anime.siteUrl]);
 
   function handleManualSave() {
     if (!manualTime) return;
@@ -42,9 +48,58 @@ export default function AnimeEditModal({
     onSaveReleaseTimestamp(anime.id, newTsSeconds);
   }
 
+  // Implemented link management functions
+  const onSaveLink = (animeId, newLink) => {
+    setAnimeList(prevList => 
+      prevList.map(animeItem => {
+        if (animeItem.id === animeId) {
+          // Store the original URL if this is the first time we're modifying it
+          const originalSiteUrl = animeItem.originalSiteUrl || animeItem.siteUrl;
+          
+          return {
+            ...animeItem,
+            siteUrl: newLink.trim(), // Save the new link (trimmed)
+            originalSiteUrl: originalSiteUrl // Keep track of the original
+          };
+        }
+        return animeItem;
+      })
+    );
+    
+    console.log(`Link updated for anime ${animeId}`);
+  };
+
+  const onResetLink = (animeId) => {
+    setAnimeList(prevList => 
+      prevList.map(animeItem => {
+        if (animeItem.id === animeId && animeItem.originalSiteUrl) {
+          return {
+            ...animeItem,
+            siteUrl: animeItem.originalSiteUrl, // Reset to original
+          };
+        }
+        return animeItem;
+      })
+    );
+    
+    console.log(`Link reset to original for anime ${animeId}`);
+  };
+
+  function handleLinkSave() {
+    onSaveLink(anime.id, manualLink);
+  }
+
+  function handleLinkReset() {
+    onResetLink(anime.id);
+    // Reset the input field to the original value
+    setManualLink(anime.originalSiteUrl || anime.siteUrl || "");
+  }
+
   function handleKeyDown(e) {
     if (e.key === "Escape") onClose();
   }
+
+  const isLinkModified = anime.originalSiteUrl && anime.siteUrl !== anime.originalSiteUrl;
 
   return (
     <div
@@ -91,9 +146,40 @@ export default function AnimeEditModal({
 
               <label style={{ fontSize: 12, color: "#aaa", marginTop: 8 }}>Link</label>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input type="text" value={anime.siteUrl || ""} disabled style={{ flex: 1, padding: 10, borderRadius: 6, border: "1px solid #333", background: "#2a2a2a", color: "#aaa" }} />
-                <button disabled style={{ background: "#444", color: "#aaa", border: "none", borderRadius: 6, padding: "8px 10px", cursor: "not-allowed" }}>Reset</button>
+                <input 
+                  type="text" 
+                  value={manualLink} 
+                  onChange={(e) => setManualLink(e.target.value)}
+                  placeholder="Enter anime URL..."
+                  style={{ flex: 1, padding: 10, borderRadius: 6, border: "1px solid #333", background: "#2a2a2a", color: "#eee" }} 
+                />
+                <button 
+                  onClick={handleLinkSave}
+                  style={{ background: "#61dafb", color: "#000", border: "none", borderRadius: 6, padding: "8px 10px", fontWeight: 800, cursor: "pointer" }}
+                >
+                  Save
+                </button>
+                <button 
+                  onClick={handleLinkReset}
+                  disabled={!anime.originalSiteUrl}
+                  style={{ 
+                    background: anime.originalSiteUrl ? "#444" : "#333", 
+                    color: anime.originalSiteUrl ? "#eee" : "#666", 
+                    border: "none", 
+                    borderRadius: 6, 
+                    padding: "8px 10px", 
+                    cursor: anime.originalSiteUrl ? "pointer" : "not-allowed" 
+                  }}
+                >
+                  Reset
+                </button>
               </div>
+              {isLinkModified && (
+                <div style={{ fontSize: 12, color: "#ffa726" }}>Link has been modified from original</div>
+              )}
+              {!anime.originalSiteUrl && (
+                <div style={{ fontSize: 12, color: "#aaa" }}>No modifications made</div>
+              )}
             </div>
           </div>
 
@@ -145,5 +231,3 @@ export default function AnimeEditModal({
     </div>
   );
 }
-
-

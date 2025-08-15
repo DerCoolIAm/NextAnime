@@ -990,6 +990,7 @@ export default function MainPage() {
           onDelete={deleteAnime}
           onToggleCalendar={handleToggleCalendar}
           isInCalendar={editTarget ? calendarList.some((a) => a.id === editTarget.id) : false}
+          setAnimeList={setWatchingList}
         />
       </div>
     </div>
