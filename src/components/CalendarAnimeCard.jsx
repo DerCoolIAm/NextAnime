@@ -1,56 +1,23 @@
 import React, { useState, useEffect } from "react";
 import Countdown from "./Countdown";
 
-export default function CalendarAnimeCard({ anime, onRemove }) {
+export default function CalendarAnimeCard({
+  anime,
+  onRemove,
+  watchedUntil = 0,
+  onToggleWatched,
+}) {
   const isAiring = anime.episode !== null && anime.airingAt !== null;
   const [holdTimer, setHoldTimer] = useState(null);
 
-  // Load watched info from localStorage on every render
-  const [watchedState, setWatchedState] = useState(() => {
-    try {
-      const saved = localStorage.getItem("watchedAnime");
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
   // Check if this anime episode is watched (only previous eps)
-  const isWatched =
-    watchedState[anime.id] && anime.episode <= watchedState[anime.id];
-
-  // Sync watchedState with localStorage whenever it changes (optional, for safety)
-  useEffect(() => {
-    try {
-      localStorage.setItem("watchedAnime", JSON.stringify(watchedState));
-    } catch {}
-  }, [watchedState]);
+  const isWatched = watchedUntil > 0 && anime.episode <= watchedUntil;
 
   function toggleWatched() {
-    setWatchedState((prev) => {
-      const currentWatched = prev[anime.id] || 0;
-      // If already watched this episode, unwatch it (decrement)
-      // else set watched up to this episode
-      console.log("anime.episode:", anime.episode);
-      console.log("currentWatched:", currentWatched);
-
-      let newWatched;
-
-      if (currentWatched === anime.episode || currentWatched > anime.episode) {
-        newWatched = anime.episode - 1;
-      } else {
-        newWatched = anime.episode;
-      }
-      console.log("secondWatched:", currentWatched);
-      // Build new state
-      const updated = { ...prev };
-      if (newWatched <= 0) {
-        delete updated[anime.id];
-      } else {
-        updated[anime.id] = newWatched;
-      }
-      return updated;
-    });
+    if (typeof onToggleWatched === "function") {
+      onToggleWatched(anime);
+      return;
+    }
   }
 
   const handleMouseDown = () => {

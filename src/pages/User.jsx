@@ -3,6 +3,7 @@ import { getAuth, signOut } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { loadWatchingList, saveWatchingList } from "../utils/storage";
+import { syncWatchedAnime } from "../utils/watchedAnime";
 import { app } from "../firebase";
 
 const auth = getAuth(app);
@@ -92,6 +93,10 @@ export default function UserPage() {
 
     fetchUserData();
     fetchWatchingList();
+    // Keep calendar watched progress synced when visiting profile while logged in
+    syncWatchedAnime(currentUser.uid).catch((err) => {
+      console.error("Error syncing watched anime:", err);
+    });
   }, [navigate]);
 
   useEffect(() => {

@@ -1,9 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { app } from "../firebase";
 import { loadCalendarList, saveCalendarList } from "../utils/storage";
+import {
+  loadWatchedAnime,
+  saveWatchedAnime,
+  saveFirestoreWatchedAnime,
+  syncWatchedAnime,
+} from "../utils/watchedAnime";
 import WeekNavigation from "../components/WeekNavigation";
 import WeekView from "../components/WeekView";
 import UnwatchedList from "../components/UnwatchedList";
@@ -94,16 +100,23 @@ export default function Calendar() {
   });
 
   const [showUnwatched, setShowUnwatched] = useState(false);
-  const [watchedState, setWatchedState] = useState({});
+  const [watchedState, setWatchedState] = useState(() => loadWatchedAnime());
   
   // Debounced save function for Firebase
   const debouncedSaveCalendarList = useRef(null);
+  const debouncedSaveWatchedAnime = useRef(null);
 
   useEffect(() => {
     debouncedSaveCalendarList.current = debounce(saveCalendarList, 300);
+    debouncedSaveWatchedAnime.current = debounce((uid, map) => {
+      saveWatchedAnime(map);
+      if (uid) {
+        saveFirestoreWatchedAnime(uid, map);
+      }
+    }, 400);
   }, []);
 
-  // Auth listener to sync calendar list from Firebase
+  // Auth listener to sync calendar list and watched progress from Firebase
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
@@ -139,10 +152,19 @@ export default function Calendar() {
         } catch (e) {
           console.error("Error syncing calendar list:", e);
         }
+
+        // Sync watched episode progress across devices
+        try {
+          const mergedWatched = await syncWatchedAnime(firebaseUser.uid);
+          setWatchedState(mergedWatched);
+        } catch (e) {
+          console.error("Error syncing watched anime:", e);
+        }
       } else {
         // Logged out: load localStorage only
         const localList = loadCalendarList() || [];
         setCalendarList(localList);
+        setWatchedState(loadWatchedAnime());
       }
     });
     return unsubscribe;
@@ -151,13 +173,39 @@ export default function Calendar() {
   // Refresh watchedState from localStorage when opening the drawer
   useEffect(() => {
     if (!showUnwatched) return;
-    try {
-      const saved = localStorage.getItem("watchedAnime");
-      setWatchedState(saved ? JSON.parse(saved) : {});
-    } catch {
-      setWatchedState({});
-    }
+    setWatchedState(loadWatchedAnime());
   }, [showUnwatched]);
+
+  const handleToggleWatched = useCallback((anime) => {
+    if (!anime?.id || anime.episode == null) return;
+
+    const prev = watchedState;
+    const currentWatched = prev[anime.id] || 0;
+    let newWatched;
+
+    if (currentWatched === anime.episode || currentWatched > anime.episode) {
+      newWatched = anime.episode - 1;
+    } else {
+      newWatched = anime.episode;
+    }
+
+    const updated = { ...prev };
+    if (newWatched <= 0) {
+      delete updated[anime.id];
+    } else {
+      updated[anime.id] = newWatched;
+    }
+
+    setWatchedState(updated);
+    saveWatchedAnime(updated);
+    if (user?.uid) {
+      if (debouncedSaveWatchedAnime.current) {
+        debouncedSaveWatchedAnime.current(user.uid, updated);
+      } else {
+        saveFirestoreWatchedAnime(user.uid, updated);
+      }
+    }
+  }, [user, watchedState]);
 
   useEffect(() => {
     if (debouncedSaveCalendarList.current) {
@@ -513,6 +561,8 @@ export default function Calendar() {
           animeByDate={animeByDate}
           onRemove={handleRemoveFromCalendar}
           isCurrentWeek={isCurrentWeek}
+          watchedState={watchedState}
+          onToggleWatched={handleToggleWatched}
         />
       </div>
 
