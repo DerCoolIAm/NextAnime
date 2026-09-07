@@ -1,7 +1,14 @@
 import React from "react";
 import CalendarAnimeCard from "./CalendarAnimeCard";
 
-export default function DayColumn({ date, animes, onRemove, isGrid }) {
+export default function DayColumn({
+  date,
+  animes,
+  onRemove,
+  isGrid,
+  watchedState = {},
+  onToggleWatched,
+}) {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const dayName = dayNames[date.getDay()];
   const dayNum = date.getDate();
@@ -77,7 +84,13 @@ export default function DayColumn({ date, animes, onRemove, isGrid }) {
           className="anime-list-scroll"
         >
           {animes.map((anime) => (
-            <CalendarAnimeCard key={anime.id} anime={anime} onRemove={onRemove} />
+            <CalendarAnimeCard
+              key={`${anime.id}-${anime.episode}`}
+              anime={anime}
+              onRemove={onRemove}
+              watchedUntil={watchedState[anime.id] || 0}
+              onToggleWatched={onToggleWatched}
+            />
           ))}
           
           {/* Episode count for this day */}

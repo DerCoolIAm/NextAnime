@@ -23,6 +23,7 @@ import {
   loadCalendarList,
   saveCalendarList,
 } from "../utils/storage";
+import { syncWatchedAnime } from "../utils/watchedAnime";
 
 import {
   fetchAiringSchedulesByIds,
@@ -524,6 +525,7 @@ export default function MainPage() {
         // On login, sync Firestore + localStorage lists
         await syncWatchingList(firebaseUser.uid);
         await syncCalendarList(firebaseUser.uid);
+        await syncWatchedAnime(firebaseUser.uid);
 
         // Kick off an auto-refresh (rate-limited) and keep it running every 3 hours.
         // Clear any previous interval first.

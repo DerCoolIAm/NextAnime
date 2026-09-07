@@ -27,3 +27,19 @@ export function loadCalendarList() {
 export function saveCalendarList(list) {
   localStorage.setItem("calendarList", JSON.stringify(list));
 }
+
+// Watched episode progress (calendar "watched until" map)
+// Prefer src/utils/watchedAnime.js for sync-aware load/save.
+
+export function loadWatchedAnime() {
+  try {
+    const data = localStorage.getItem("watchedAnime");
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveWatchedAnime(map) {
+  localStorage.setItem("watchedAnime", JSON.stringify(map || {}));
+}
